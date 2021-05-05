@@ -1,0 +1,17 @@
+# libraries needed
+library(RMark)
+library(tidyverse)
+library(readxl)
+library(BaSTA)
+library(pbapply)
+library(RColorBrewer)
+library(grid)
+library(Rmisc)
+
+# if(!require(devtools)) install.packages("devtools")
+library("devtools")
+# install_github('oliviergimenez/R2ucare')
+# install.packages("unmarked")
+library(R2ucare)
+library(unmarked)
+library(marked)
