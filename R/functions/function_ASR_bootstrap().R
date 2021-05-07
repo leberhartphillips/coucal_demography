@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # coucal_matrix() builds the two-sex Lefkovitch matrix using the vital rates 
 # specified in the *demographic_rates* object.

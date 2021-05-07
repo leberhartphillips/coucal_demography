@@ -1,8 +1,8 @@
 # load packages
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # load functions
-function.sources = list.files(path = "scripts",
+function.sources = list.files(path = "R/functions",
                               pattern = "*\\().R$", full.names = TRUE, 
                               ignore.case = TRUE)
 sapply(function.sources, source)

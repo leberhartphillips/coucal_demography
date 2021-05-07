@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # make_treat_matrix() makes a treatment matrix from a summary or the bootstrapped
 # vital rates

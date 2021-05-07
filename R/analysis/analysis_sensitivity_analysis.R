@@ -1,8 +1,8 @@
 # load packages
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # load functions
-function.sources = list.files(path = "scripts",
+function.sources = list.files(path = "R/functions",
                               pattern = "*\\().R$", full.names = TRUE, 
                               ignore.case = TRUE)
 sapply(function.sources, source)
@@ -18,12 +18,21 @@ WBC_HSR = 0.5198
 WBC_k = 4
 WBC_ISR = 0.524
 
-BC_boot_out$survival_rates_boot$iter <- as.factor(BC_boot_out$survival_rates_boot$iter)
-WBC_boot_out$survival_rates_boot$iter <- as.factor(WBC_boot_out$survival_rates_boot$iter)
+
+# load output
+BC_hazard_rate_boot <- 
+  readRDS("output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_one.rds")
+
+# load output
+WBC_hazard_rate_boot <- 
+  readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
+
+BC_hazard_rate_boot_tidy$vital_rate_ests_boot$iter <- as.factor(BC_hazard_rate_boot_tidy$vital_rate_ests_boot$iter)
+WBC_hazard_rate_boot_tidy$vital_rate_ests_boot$iter <- as.factor(WBC_hazard_rate_boot_tidy$vital_rate_ests_boot$iter)
 
 # summarize the vital rates
 survival_rates_boot_summary <-
-  bind_rows(BC_boot_out$survival_rates_boot, WBC_boot_out$survival_rates_boot) %>% 
+  bind_rows(BC_hazard_rate_boot_tidy$vital_rate_ests_boot, WBC_hazard_rate_boot_tidy$vital_rate_ests_boot) %>% 
   mutate(vital_rate = paste(sex, stage, rate, sep = "_")) %>% 
   Rmisc::summarySE(.,
                    measurevar = "value",

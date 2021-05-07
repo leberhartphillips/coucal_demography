@@ -1,6 +1,6 @@
-source("scripts/01_libraries.R")
-source("scripts/02_func_bootstrap_data().R")
-source("scripts/02_func_bootstrap_survival_ASR().R")
+source("R/project/project_libraries.R")
+# source("scripts/02_func_bootstrap_data().R")
+# source("scripts/02_func_bootstrap_survival_ASR().R")
 
 # run_bootstrap_survival_ASR() initiates the bootstrap_data() and 
 # bootstrap_survival_ASR() functions in sequence.

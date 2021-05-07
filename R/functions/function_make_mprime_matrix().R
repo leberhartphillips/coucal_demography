@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # make_mprime_matrix() makes a prime-matrix (i.e., a matrix halfway between
 # the treatment matrix and the unbiased matrix) from a set of vital rate

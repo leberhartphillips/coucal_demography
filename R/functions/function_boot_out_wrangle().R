@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # boot_out_wrangle() loads all the four output rds files from the parallel 
 # bootstraping proceedure and consolidates them into a single object

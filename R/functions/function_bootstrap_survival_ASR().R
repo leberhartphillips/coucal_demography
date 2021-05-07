@@ -1,6 +1,6 @@
-source("scripts/01_libraries.R")
-source("scripts/02_func_matrix_ASR().R")
-source("scripts/02_func_coucal_matrix().R")
+source("R/project/project_libraries.R")
+# source("scripts/02_func_matrix_ASR().R")
+# source("scripts/02_func_coucal_matrix().R")
 
 # bootstrap_survival_ASR() runs the survival analyses and estimates the ASR of 
 # the bootstrapped sample created from bootstrap_data(). 

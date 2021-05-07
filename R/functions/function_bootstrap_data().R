@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # bootstrap_data() randomly samples with replacement from the nestling and 
 # fledgling datasets, while making sure that if an individual existing in both

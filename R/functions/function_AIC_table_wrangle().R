@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # AIC_table_wrangle() summarizes all the AIC-based model selection results
 # produced by the bootstrapping procedure. It is run to prepare the data

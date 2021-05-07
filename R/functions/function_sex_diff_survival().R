@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # sex_diff_survival() takes the list of results from the bootstrap proceedure
 # and calculates the sex difference in survival at each life stage for each

@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # LTRE_analysis() compares the relative difference in ASR response of an
 # unbiased two-sex matrix vs. the observed sex-specific matrix

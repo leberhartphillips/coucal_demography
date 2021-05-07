@@ -1,3 +1,18 @@
+# load packages
+source("R/project/project_libraries.R")
+
+# load functions
+function.sources = list.files(path = "R/functions",
+                              pattern = "*\\().R$", full.names = TRUE, 
+                              ignore.case = TRUE)
+sapply(function.sources, source)
+
+# load capture histories
+data.sources = list.files(path = "cooked_data", 
+                          pattern="*ch.rds$", full.names = TRUE, 
+                          ignore.case = TRUE)
+sapply(data.sources, load, .GlobalEnv)
+
 #### read the data into R ----
 # pre & postfleding survival combined (variable postf_age, postf_status) 
 dat = read.csv("data/raw/Coucal_chick_survival_2001-2019_20200129.csv", header=T)
@@ -108,6 +123,60 @@ status_dat_fledglings <-
   # consolidate to variables of interest
   dplyr::select(species, ind_ID, nest_ID, year, sex, entry, exit, event, hatch_order)
 
+status_dat_all <- 
+  # read raw data
+  read.csv("data/raw/Coucal_chick_survival_2001-2019_20200129.csv", 
+           header = TRUE, stringsAsFactors = FALSE, na.strings = c("", " ", "NA")) %>% 
+  
+  # rename ring_ID column
+  dplyr::rename(ring_ID = Ring_ID) %>% 
+  
+  # make all entries lower case for consistency
+  mutate(Fledged_status = tolower(Fledged.),
+         site = tolower(site)) %>% 
+  
+  # select variables of interest
+  select(species, ring_ID, lab_no, sex, year, site, nest_ID, pref_age, 
+         Fledged_status, postf_age, postf_status, ageC, statusC, 
+         lay_date, hatch_order) %>% 
+  
+  # remove all white space from data
+  mutate(across(everything(), ~str_trim(.x))) %>% 
+  mutate(across(everything(), ~str_replace_all(.x, fixed(" "), ""))) %>% 
+  
+  # specify empty data as NA
+  mutate(across(everything(), ~gsub("^$|^ $", NA, .x))) %>% 
+  
+  # exclude all individuals that died in the nest
+  # filter(Fledged_status == "yes") %>% 
+  
+  # classify columns
+  mutate(sex = as.factor(sex),
+         ageC = as.numeric(ageC),
+         postf_age = as.numeric(postf_age),
+         postf_status = as.numeric(postf_status),
+         hatch_order = as.numeric(hatch_order),
+         pref_age = as.numeric(pref_age)) %>% 
+  
+  # remove rows with missing sex, age, and status info
+  filter(!is.na(sex) & !is.na(ageC) & !is.na(statusC)) %>% 
+  
+  # make a unique id for each individual
+  mutate(ind_ID = paste(nest_ID, lab_no, ring_ID, sep = "_"),
+         
+         # create the age of entry into the data (all at age 15)
+         entry = 0,
+         
+         # specify the age of death or censoring
+         exit = ageC,
+         
+         # make the event numeric and specify if 
+         # the individual died (1) or was censored (0)
+         event = as.numeric(statusC)) %>% 
+  
+  # consolidate to variables of interest
+  dplyr::select(species, ind_ID, nest_ID, year, sex, entry, exit, event, hatch_order)
+
 BC_nest_dat <- 
   status_dat_nestlings %>% 
   filter(species == "BC")
@@ -116,62 +185,501 @@ BC_fled_dat <-
   status_dat_fledglings %>% 
   filter(species == "BC")
 
+BC_all_dat <- 
+  status_dat_all %>% 
+  filter(species == "BC")
+
+WBC_nest_dat <- 
+  status_dat_nestlings %>% 
+  filter(species == "WBC")
+
+WBC_fled_dat <- 
+  status_dat_fledglings %>% 
+  filter(species == "WBC")
+
+WBC_all_dat <- 
+  status_dat_all %>% 
+  filter(species == "WBC")
+
+#### Hazard rate bootstrap ----
+
+# set attempt to 0 at start of each loop
+attempt <- 0
+
+tt.a <- seq(0, 60, 1)
+alpha_value <- 1.4
+
+# store simulated estimates only if peak >= 1 and <= 10 and it's less than
+# 100 attempts
+while( attempt <= 100 ) {
+  
+  # next attempt
+  attempt <- attempt + 1
+  
+  boot_BC_all_dat <- 
+    WBC_all_dat %>% 
+    dplyr::group_by(nest_ID) %>%
+    dplyr::sample_n(1)
+  
+  try(
+    BC.hz.M.a <- sshzd(Surv(exit, event, entry) ~ exit, 
+                       data = filter(boot_BC_all_dat, sex == "M"), 
+                       alpha = alpha_value)
+  )
+  # simulate an estimate
+  try(
+    est.M.a_boot <- hzdcurve.sshzd(object = BC.hz.M.a, time = tt.a, se = TRUE)
+  )
+}
+# store fixed effects
+mod6_sim@fixef[i, ] <- mod6_sim_try@fixef
+
+
+boot_BC_all_dat <- 
+  BC_all_dat %>% 
+  dplyr::group_by(nest_ID) %>%
+  dplyr::sample_n(1)
+
+
+
+BC.hz.M.a <- sshzd(Surv(exit, event, entry) ~ exit, 
+                   data = filter(boot_BC_all_dat, sex == "M"), 
+                   alpha = alpha_value)
+
+project(object = BC.hz.M.a)
+
+est.M.a_boot <- hzdcurve.sshzd(object = BC.hz.M.a, time = tt.a, se = TRUE)
+
+M_WBC_all_hazard_function_est_boot <- 
+  data.frame(species = rep("BC", length(tt.a)), 
+             sex = rep("M", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a) %>% 
+  mutate(estimate = 1 - est.M.a_boot$fit,
+         upper = 1 - est.M.a_boot$fit * exp(1.96 * est.M.a_boot$se),
+         lower = 1 - est.M.a_boot$fit / exp(1.96 * est.M.a_boot$se))
+
+expand.grid(species = species, 
+            age = time_vector,
+            sex = c("M", "F")) %>% 
+  mutate(estimate = c(est.M.a_boot$fit, est.M.a_boot$fit))
+
+immigrant_pop_size = 100
+k = 4
+HSR = 0.4955
+h = 1/2.9
+egg_survival = 0.32
+ISR = 0.738
+immigrant_pop_size = 100
+fledge_age = 15
+flight_age = 36
+first_year = 2001
+bootstrap_name = "BC_one"
+num_boot = 1
+species = "BC"
+iter_add = 1
+
+# transform the daily nestling survival (DCS) to apparent fledgling success
+# by calculating the product of all DCS estimates:
+coucal_nestling_survival <-
+  M_WBC_all_hazard_function_est_boot %>% 
+  filter(age < fledge_age) %>% 
+  group_by(sex) %>% 
+  dplyr::summarise(value = prod(estimate), .groups = 'drop') %>%
+  mutate(stage = "nestling",
+         rate = "survival")
+
+coucal_groundling_survival <-
+  M_WBC_all_hazard_function_est_boot %>% 
+  filter(age < flight_age) %>% 
+  group_by(sex) %>% 
+  dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+  mutate(stage = "groundling",
+         rate = "survival")
+
+coucal_fledgling_survival <-
+  M_WBC_all_hazard_function_est_boot %>% 
+  filter(age >= flight_age) %>% 
+  group_by(sex) %>% 
+  dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+  mutate(stage = "fledgling",
+         rate = "survival")
+
+adult_F_immigrants <- immigrant_pop_size * (1 - ISR)
+adult_M_immigrants <- immigrant_pop_size * ISR
+
+coucal_adult_immigration <- 
+  data.frame(sex = c("Female", "Male"),
+             value = c(adult_F_immigrants, adult_M_immigrants),
+             stage = c("adult"),
+             rate = c("immigration"))
+
+coucal_egg_survival <- 
+  data.frame(sex = NA,
+             value = egg_survival,
+             stage = c("egg"),
+             rate = c("survival"))
+
+ggplot(M_WBC_all_hazard_function_est_boot) +
+  geom_line(aes(y = estimate, x = age, color = sex)) +
+  geom_ribbon(aes(x = age, ymax = upper, ymin = lower, fill = sex), alpha = 0.25) +
+  # geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "green") +
+  # geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "green") +
+  geom_vline(xintercept = 36, linetype = "dashed", alpha = 0.5, color = "grey70") +
+  geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "grey70") +
+  # facet_grid(species ~ .) +
+  luke_theme +
+  scale_fill_manual(values = plot_palette_sex) +
+  scale_color_manual(values = plot_palette_sex) +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(0.8, 1))
+
+
+#### Estimate Hazard Function using a smoother spline from the gss package
+# alpha 1.4 is the default value (less may be over fitting)
+alpha_value <- 1.4
+BC.hz.M.a <- sshzd(Surv(exit, event, entry)~exit, 
+                   data = filter(BC_all_dat, sex == "M"), 
+                   alpha = alpha_value) 
+BC.hz.F.a <- sshzd(Surv(exit, event, entry)~exit, 
+                   data = filter(BC_all_dat, sex == "F"), 
+                   alpha = alpha_value)
+WBC.hz.M.a <- sshzd(Surv(exit, event, entry)~exit, 
+                    data = filter(WBC_all_dat, sex == "M"), 
+                    alpha = alpha_value)
+WBC.hz.F.a <- sshzd(Surv(exit, event, entry)~exit, 
+                    data = filter(WBC_all_dat, sex == "F"), 
+                    alpha = alpha_value)
+
+# predicted hazard
+# Female all
+est.F.a <- hzdrate.sshzd(BC.hz.F.a, tt.a, se = TRUE)
+F_BC_all_hazard_function_est <- 
+  data.frame(species = rep("BC", length(tt.a)), 
+             sex = rep("F", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a)
+F_BC_all_hazard_function_est$estimate <- 1 - est.F.a$fit
+F_BC_all_hazard_function_est$upper <- 1 - est.F.a$fit*exp(1.96*est.F.a$se)
+F_BC_all_hazard_function_est$lower <- 1 - est.F.a$fit/exp(1.96*est.F.a$se)
+
+# Male all
+est.M.a <- hzdrate.sshzd(BC.hz.M.a, tt.a, se = TRUE)
+M_BC_all_hazard_function_est <- 
+  data.frame(species = rep("BC", length(tt.a)), 
+             sex = rep("M", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a)
+M_BC_all_hazard_function_est$estimate <- 1 - est.M.a$fit
+M_BC_all_hazard_function_est$upper <- 1 - est.M.a$fit*exp(1.96*est.M.a$se)
+M_BC_all_hazard_function_est$lower <- 1 - est.M.a$fit/exp(1.96*est.M.a$se)
+
+# predicted hazard
+# Female all
+est.F.a <- hzdrate.sshzd(WBC.hz.F.a, tt.a, se = TRUE)
+F_WBC_all_hazard_function_est <- 
+  data.frame(species = rep("WBC", length(tt.a)), 
+             sex = rep("F", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a) %>% 
+  mutate(estimate = 1 - est.F.a$fit,
+         upper = 1 - est.F.a$fit*exp(1.96*est.F.a$se),
+         lower = 1 - est.F.a$fit/exp(1.96*est.F.a$se))
+
+# Male all
+est.M.a <- hzdrate.sshzd(WBC.hz.M.a, tt.a, se = TRUE)
+M_WBC_all_hazard_function_est <- 
+  data.frame(species = rep("WBC", length(tt.a)), 
+             sex = rep("M", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a)
+M_WBC_all_hazard_function_est$estimate <- 1 - est.M.a$fit
+M_WBC_all_hazard_function_est$upper <- 1 - est.M.a$fit*exp(1.96*est.M.a$se)
+M_WBC_all_hazard_function_est$lower <- 1 - est.M.a$fit/exp(1.96*est.M.a$se)
+
+all_hazard_function_est <- 
+  bind_rows(F_WBC_all_hazard_function_est,
+            M_WBC_all_hazard_function_est,
+            F_BC_all_hazard_function_est,
+            M_BC_all_hazard_function_est)
+
+ggplot(all_hazard_function_est) +
+  geom_line(aes(y = estimate, x = age, color = sex)) +
+  geom_ribbon(aes(x = age, ymax = upper, ymin = lower, fill = sex), alpha = 0.25) +
+  # geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "green") +
+  # geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "green") +
+  geom_vline(xintercept = 36, linetype = "dashed", alpha = 0.5, color = "grey70") +
+  geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "grey70") +
+  facet_grid(species ~ .) +
+  luke_theme +
+  scale_fill_manual(values = plot_palette_sex) +
+  scale_color_manual(values = plot_palette_sex) +
+  theme(legend.position = "none")
+
+# time is exit
+# status is event
+# age is entry
+
+fit <- gssanova(cbind(exit + 0.01, event) ~ entry, data = filter(BC_all_dat, sex == "M"),
+                family = "weibull")
+
+test <- sshzd(Surv(exit, event) ~ sqrt(exit) * entry, data = filter(BC_all_dat, sex == "M"))
+
+project(BC.hz.M.a, inc = c("exit", "entry"))
+
+sshzd(Surv(futime, status) ~ futime * age, data = stan)
+
+#### BC hazard function smoothing ----
 # hazard functions by treatment period
 # note Surv() in the sshzd() function takes the arguments in a different order than Surv() in the survival package
 # hazard function = hz
-hz.M.f <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_fled_dat, sex == "M"), alpha = 1.4) #alpha=0.25 will overfit
-hz.F.f <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_fled_dat, sex == "F"), alpha = 1.4)
+BC.hz.M.f <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_fled_dat, sex == "M"), alpha = 1.4) #alpha=0.25 will overfit
+BC.hz.F.f <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_fled_dat, sex == "F"), alpha = 1.4)
 
-hz.M.n <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_nest_dat, sex == "M"), alpha = 1.4) #alpha=0.25 will overfit
-hz.F.n <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_nest_dat, sex == "F"), alpha = 1.4)
+BC.hz.M.n <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_nest_dat, sex == "M"), alpha = 1.4) #alpha=0.25 will overfit
+BC.hz.F.n <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_nest_dat, sex == "F"), alpha = 1.4)
+
+BC.hz.M.a <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_all_dat, sex == "M"), alpha = 1.4) #alpha=0.25 will overfit
+BC.hz.F.a <- sshzd(Surv(exit, event, entry)~exit, data = filter(BC_all_dat, sex == "F"), alpha = 1.4)
+# assess the plausibility of a proportional hazard model, or an additive model in log hazard,
+# check the Kullback-Leibler projection (want the first 2 elements to be very small and the "check" to be 1) 
+project(BC.hz.M.a, inc = c("exit", "entry"))
+project(BC.hz.F.a, inc = c("exit", "entry"))
+
+tt.a <- seq(0, 70, 1)
+new <- data.frame(entry = c(0, 0), exit = c(15, 35.5))
+est <- hzdrate.sshzd(BC.hz.M.a, new, se = TRUE)
+age1 <- c(15, 35.5)
+sex2 <- c(1,0)
+test_df <- expand.grid(exit = seq(0, 70, 1), sex2 = c(1, 0))
+
+BC_all_dat$sex2 <- ifelse(BC_all_dat$sex == "M", 1, 0)
+
+# Error in `[.data.frame`(x, , object$terms[[label]]$vlist) : 
+#   undefined columns selected
+
+test <- sshzd(Surv(exit, event, entry)~exit*sex2, data = BC_all_dat, alpha = 1.4)
+rates_test <- hzdcurve.sshzd(test, time = tt.a, covariates = test_df)
+
+curve_test3 <- hzdcurve.sshzd(weibull_test, time = tt.a, covariates = sex2)
+curve_test <- 
+  hzdcurve.sshzd(object = weibull_test, time = tt.a)
+
+curve_test <- 
+  hzdcurve.sshzd(object = BC.hz.M.a, time = tt.a)
+
+curve_test1 <- 
+  hzdcurve.sshzd(object = BC.hz.M.a, time = tt.a, data.frame(age = age1))
+
+curve_test2 <- 
+  hzdcurve.sshzd(object = BC.hz.M.a, time = tt.a, data.frame(age = age2))
+
+curve_test3 <- 
+  hzdrate.sshzd(object = BC.hz.M.a, tt.a)
+
+surv_test <- survexp.sshzd(BC.hz.M.a, tt.a, data.frame(age = age0))
+
+plot(tt.a, curve_test2, type="l", lty=1, lwd=2, col="blue", xaxs="i", yaxs="i", 
+     # xlim=c(0, 70), ylim=c(0.7, 1), 
+     xlab=c("days since hatching"), ylab=c("hazard function"))
+lines(tt.a, curve_test3, lty=2, lwd=2, col="blue")
+lines(tt.a, curve_test2, lty=2, lwd=2, col="blue")
+
+
+# calculate the hazard rate function for plotting for a sequence of time
+# hazard = hz
+tt.n <- seq(0, 15, 1)
+tt.f <- seq(16, 70, 1)
+tt.a <- seq(0, 70, 1)
+
+# predicted hazard
+# Female nestlings
+est.M.n <- hzdrate.sshzd(BC.hz.M.n, tt.n, se = TRUE)
+BC.hz.M.n.fit = 1 - est.M.n$fit
+BC.hz.M.n.hi <- 1 - est.M.n$fit*exp(1.96*est.M.n$se)
+BC.hz.M.n.lo <- 1 - est.M.n$fit/exp(1.96*est.M.n$se)
+
+# Male nestlings
+est.F.n <- hzdrate.sshzd(BC.hz.F.n, tt.n, se = TRUE)
+BC.hz.F.n.fit = 1 - est.F.n$fit
+BC.hz.F.n.hi <- 1 - est.F.n$fit*exp(1.96*est.F.n$se)
+BC.hz.F.n.lo <- 1 - est.F.n$fit/exp(1.96*est.F.n$se)
+
+# predicted hazard
+# Female fledglings
+est.M.f <- hzdrate.sshzd(BC.hz.M.f, tt.f, se = TRUE)
+BC.hz.M.f.fit = 1 - est.M.f$fit
+BC.hz.M.f.hi <- 1 - est.M.f$fit*exp(1.96*est.M.f$se)
+BC.hz.M.f.lo <- 1 - est.M.f$fit/exp(1.96*est.M.f$se)
+
+# Male fledglings
+est.F.f <- hzdrate.sshzd(BC.hz.F.f, tt.f, se = TRUE)
+BC.hz.F.f.fit = 1 - est.F.f$fit
+BC.hz.F.f.hi <- 1 - est.F.f$fit*exp(1.96*est.F.f$se)
+BC.hz.F.f.lo <- 1 - est.F.f$fit/exp(1.96*est.F.f$se)
+
+# predicted hazard
+# Female all
+est.F.a <- hzdrate.sshzd(BC.hz.F.a, tt.a, se = TRUE)
+F_BC_all_hazard_function_est <- 
+  data.frame(species = rep("BC", length(tt.a)), 
+             sex = rep("F", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a)
+F_BC_all_hazard_function_est$estimate <- 1 - est.F.a$fit
+F_BC_all_hazard_function_est$upper <- 1 - est.F.a$fit*exp(1.96*est.F.a$se)
+F_BC_all_hazard_function_est$lower <- 1 - est.F.a$fit/exp(1.96*est.F.a$se)
+
+# Male all
+est.M.a <- hzdrate.sshzd(BC.hz.M.a, tt.a, se = TRUE)
+M_BC_all_hazard_function_est <- 
+  data.frame(species = rep("BC", length(tt.a)), 
+             sex = rep("M", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a)
+M_BC_all_hazard_function_est$estimate <- 1 - est.M.a$fit
+M_BC_all_hazard_function_est$upper <- 1 - est.M.a$fit*exp(1.96*est.M.a$se)
+M_BC_all_hazard_function_est$lower <- 1 - est.M.a$fit/exp(1.96*est.M.a$se)
+
+# graph for hazard functions in males and females periods
+plot(tt.n, BC.hz.M.n.fit, type="l", lty=1, lwd=2, col="blue", xaxs="i", yaxs="i", 
+     xlim=c(0, 70), ylim=c(0.7, 1), 
+     xlab=c("days since hatching"), ylab=c("hazard function"))
+lines(tt.n, BC.hz.M.n.hi, lty=2, lwd=2, col="blue")
+lines(tt.n, BC.hz.M.n.lo, lty=2, lwd=2, col="blue")
+lines(tt.n, BC.hz.F.n.fit, lty=1, lwd=2, col="red")
+lines(tt.n, BC.hz.F.n.hi, lty=2, lwd=2, col="red")
+lines(tt.n, BC.hz.F.n.lo, lty=2, lwd=2, col="red")
+
+lines(tt.f, BC.hz.M.f.fit, lty=1, lwd=2, col="blue")
+lines(tt.f, BC.hz.M.f.hi, lty=2, lwd=2, col="blue")
+lines(tt.f, BC.hz.M.f.lo, lty=2, lwd=2, col="blue")
+lines(tt.f, BC.hz.F.f.fit, lty=1, lwd=2, col="red")
+lines(tt.f, BC.hz.F.f.hi, lty=2, lwd=2, col="red")
+lines(tt.f, BC.hz.F.f.lo, lty=2, lwd=2, col="red")
+
+plot(tt.a, BC.hz.M.a.fit, type="l", lty=1, lwd=2, col="blue", xaxs="i", yaxs="i", 
+     xlim=c(0, 70), ylim=c(0.7, 1),
+     xlab=c("days since hatching"), ylab=c("hazard function"))
+lines(tt.a, BC.hz.M.a.hi, lty=2, lwd=2, col="blue")
+lines(tt.a, BC.hz.M.a.lo, lty=2, lwd=2, col="blue")
+lines(tt.a, BC.hz.F.a.fit, lty=1, lwd=2, col="red")
+lines(tt.a, BC.hz.F.a.hi, lty=2, lwd=2, col="red")
+lines(tt.a, BC.hz.F.a.lo, lty=2, lwd=2, col="red")
+
+#### WBC hazard function smoothing ----
+# note Surv() in the sshzd() function takes the arguments in a different order than Surv() in the survival package
+# hazard function = hz
+WBC.hz.M.f <- sshzd(Surv(exit, event, entry)~exit, data = filter(WBC_fled_dat, sex == "M"), alpha = 1.4) #alpha=0.25 will overfit
+WBC.hz.F.f <- sshzd(Surv(exit, event, entry)~exit, data = filter(WBC_fled_dat, sex == "F"), alpha = 1.4)
+
+WBC.hz.M.n <- sshzd(Surv(exit, event, entry)~exit, data = filter(WBC_nest_dat, sex == "M"), alpha = 1.4) #alpha=0.25 will overfit
+WBC.hz.F.n <- sshzd(Surv(exit, event, entry)~exit, data = filter(WBC_nest_dat, sex == "F"), alpha = 1.4)
+
+WBC.hz.M.a <- sshzd(Surv(exit, event, entry)~exit, data = filter(WBC_all_dat, sex == "M"), alpha = 1.2) #alpha=0.25 will overfit
+WBC.hz.F.a <- sshzd(Surv(exit, event, entry)~exit, data = filter(WBC_all_dat, sex == "F"), alpha = 1.2)
 
 # calculate the hazard rate function for plotting for a sequence of time (tt = 1 to 52 weeks by 0.5)
 # hazard = hz
 tt.n <- seq(0, 15, 1)
 tt.f <- seq(16, 70, 1)
+tt.a <- seq(0, 70, 1)
 
 # predicted hazard
 # Female nestlings
-est.M.n <- hzdrate.sshzd(hz.M.n, tt.n, se = TRUE)
-hz.M.n.fit = 1 - est.M.n$fit
-hz.M.n.hi <- 1 - est.M.n$fit*exp(1.96*est.M.n$se)
-hz.M.n.lo <- 1 - est.M.n$fit/exp(1.96*est.M.n$se)
+est.M.n <- hzdrate.sshzd(WBC.hz.M.n, tt.n, se = TRUE)
+WBC.hz.M.n.fit = 1 - est.M.n$fit
+WBC.hz.M.n.hi <- 1 - est.M.n$fit*exp(1.96*est.M.n$se)
+WBC.hz.M.n.lo <- 1 - est.M.n$fit/exp(1.96*est.M.n$se)
 
 # Male nestlings
-est.F.n <- hzdrate.sshzd(hz.F.n, tt.n, se = TRUE)
-hz.F.n.fit = 1 - est.F.n$fit
-hz.F.n.hi <- 1 - est.F.n$fit*exp(1.96*est.F.n$se)
-hz.F.n.lo <- 1 - est.F.n$fit/exp(1.96*est.F.n$se)
+est.F.n <- hzdrate.sshzd(WBC.hz.F.n, tt.n, se = TRUE)
+WBC.hz.F.n.fit = 1 - est.F.n$fit
+WBC.hz.F.n.hi <- 1 - est.F.n$fit*exp(1.96*est.F.n$se)
+WBC.hz.F.n.lo <- 1 - est.F.n$fit/exp(1.96*est.F.n$se)
 
 # predicted hazard
 # Female fledglings
-est.M.f <- hzdrate.sshzd(hz.M.f, tt.f, se = TRUE)
-hz.M.f.fit = 1 - est.M.f$fit
-hz.M.f.hi <- 1 - est.M.f$fit*exp(1.96*est.M.f$se)
-hz.M.f.lo <- 1 - est.M.f$fit/exp(1.96*est.M.f$se)
+est.M.f <- hzdrate.sshzd(WBC.hz.M.f, tt.f, se = TRUE)
+WBC.hz.M.f.fit = 1 - est.M.f$fit
+WBC.hz.M.f.hi <- 1 - est.M.f$fit*exp(1.96*est.M.f$se)
+WBC.hz.M.f.lo <- 1 - est.M.f$fit/exp(1.96*est.M.f$se)
 
 # Male fledglings
-est.F.f <- hzdrate.sshzd(hz.F.f, tt.f, se = TRUE)
-hz.F.f.fit = 1 - est.F.f$fit
-hz.F.f.hi <- 1 - est.F.f$fit*exp(1.96*est.F.f$se)
-hz.F.f.lo <- 1 - est.F.f$fit/exp(1.96*est.F.f$se)
+est.F.f <- hzdrate.sshzd(WBC.hz.F.f, tt.f, se = TRUE)
+WBC.hz.F.f.fit = 1 - est.F.f$fit
+WBC.hz.F.f.hi <- 1 - est.F.f$fit*exp(1.96*est.F.f$se)
+WBC.hz.F.f.lo <- 1 - est.F.f$fit/exp(1.96*est.F.f$se)
+
+# predicted hazard
+# Female all
+est.F.a <- hzdrate.sshzd(WBC.hz.F.a, tt.a, se = TRUE)
+F_WBC_all_hazard_function_est <- 
+  data.frame(species = rep("WBC", length(tt.a)), 
+             sex = rep("F", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a)
+F_WBC_all_hazard_function_est$estimate <- 1 - est.F.a$fit
+F_WBC_all_hazard_function_est$upper <- 1 - est.F.a$fit*exp(1.96*est.F.a$se)
+F_WBC_all_hazard_function_est$lower <- 1 - est.F.a$fit/exp(1.96*est.F.a$se)
+
+# Male all
+est.M.a <- hzdrate.sshzd(WBC.hz.M.a, tt.a, se = TRUE)
+M_WBC_all_hazard_function_est <- 
+  data.frame(species = rep("WBC", length(tt.a)), 
+             sex = rep("M", length(tt.a)), 
+             stage = rep("all", length(tt.a)),
+             age = tt.a)
+M_WBC_all_hazard_function_est$estimate <- 1 - est.M.a$fit
+M_WBC_all_hazard_function_est$upper <- 1 - est.M.a$fit*exp(1.96*est.M.a$se)
+M_WBC_all_hazard_function_est$lower <- 1 - est.M.a$fit/exp(1.96*est.M.a$se)
+
+all_hazard_function_est <- 
+  bind_rows(F_WBC_all_hazard_function_est,
+            M_WBC_all_hazard_function_est,
+            F_BC_all_hazard_function_est,
+            M_BC_all_hazard_function_est)
+
+ggplot(all_hazard_function_est) +
+  geom_line(aes(y = estimate, x = age, color = sex)) +
+  geom_ribbon(aes(x = age, ymax = upper, ymin = lower, fill = sex), alpha = 0.25) +
+  # geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "green") +
+  # geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "green") +
+  geom_vline(xintercept = 36.85, linetype = "dashed", alpha = 0.5, color = "orange") +
+  annotate("rect", xmin = 34.71, xmax = 38.99, ymin = -Inf, ymax = Inf, alpha = 0.2, fill = "orange") +
+  annotate("rect", xmin = 32.73, xmax = 36.94, ymin = -Inf, ymax = Inf, alpha = 0.2, fill = "green") +
+  geom_vline(xintercept = 34.85, linetype = "dashed", alpha = 0.5, color = "green") +
+  facet_grid(species ~ .) +
+  luke_theme +
+  scale_fill_manual(values = plot_palette_sex) +
+  scale_color_manual(values = plot_palette_sex) +
+  theme(legend.position = "none")
 
 # graph for hazard functions in males and females periods
-plot(tt.n, hz.M.n.fit, type="l", lty=1, lwd=2, col="blue", xaxs="i", yaxs="i", 
+plot(tt.n, WBC.hz.M.n.fit, type="l", lty=1, lwd=2, col="blue", xaxs="i", yaxs="i", 
      xlim=c(0, 70), ylim=c(0.7, 1), 
      xlab=c("days since hatching"), ylab=c("hazard function"))
-lines(tt.n, hz.M.n.hi, lty=2, lwd=2, col="blue")
-lines(tt.n, hz.M.n.lo, lty=2, lwd=2, col="blue")
-lines(tt.n, hz.F.n.fit, lty=1, lwd=2, col="red")
-lines(tt.n, hz.F.n.hi, lty=2, lwd=2, col="red")
-lines(tt.n, hz.F.n.lo, lty=2, lwd=2, col="red")
+lines(tt.n, WBC.hz.M.n.hi, lty=2, lwd=2, col="blue")
+lines(tt.n, WBC.hz.M.n.lo, lty=2, lwd=2, col="blue")
+lines(tt.n, WBC.hz.F.n.fit, lty=1, lwd=2, col="red")
+lines(tt.n, WBC.hz.F.n.hi, lty=2, lwd=2, col="red")
+lines(tt.n, WBC.hz.F.n.lo, lty=2, lwd=2, col="red")
 
-lines(tt.f, hz.M.f.fit, lty=1, lwd=2, col="blue")
-lines(tt.f, hz.M.f.hi, lty=2, lwd=2, col="blue")
-lines(tt.f, hz.M.f.lo, lty=2, lwd=2, col="blue")
-lines(tt.f, hz.F.f.fit, lty=1, lwd=2, col="red")
-lines(tt.f, hz.F.f.hi, lty=2, lwd=2, col="red")
-lines(tt.f, hz.F.f.lo, lty=2, lwd=2, col="red")
+lines(tt.f, WBC.hz.M.f.fit, lty=1, lwd=2, col="blue")
+lines(tt.f, WBC.hz.M.f.hi, lty=2, lwd=2, col="blue")
+lines(tt.f, WBC.hz.M.f.lo, lty=2, lwd=2, col="blue")
+lines(tt.f, WBC.hz.F.f.fit, lty=1, lwd=2, col="red")
+lines(tt.f, WBC.hz.F.f.hi, lty=2, lwd=2, col="red")
+lines(tt.f, WBC.hz.F.f.lo, lty=2, lwd=2, col="red")
+
+plot(tt.a, WBC.hz.M.a.fit, type="l", lty=1, lwd=2, col="blue", xaxs="i", yaxs="i", 
+     xlim=c(0, 70), ylim=c(0.7, 1),
+     xlab=c("days since hatching"), ylab=c("hazard function"))
+lines(tt.a, WBC.hz.M.a.hi, lty=2, lwd=2, col="blue")
+lines(tt.a, WBC.hz.M.a.lo, lty=2, lwd=2, col="blue")
+lines(tt.a, WBC.hz.F.a.fit, lty=1, lwd=2, col="red")
+lines(tt.a, WBC.hz.F.a.hi, lty=2, lwd=2, col="red")
+lines(tt.a, WBC.hz.F.a.lo, lty=2, lwd=2, col="red")
 
 legend("topright", legend = c("Female", "Male"), cex=2, lty=c(1,1), col=c("red", "blue"), lwd=2.5, bty="n")
 axis(1, labels=F, tick=T)

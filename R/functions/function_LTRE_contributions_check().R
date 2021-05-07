@@ -1,4 +1,4 @@
-source("scripts/01_libraries.R")
+source("R/project/project_libraries.R")
 
 # LTRE_contributions_check() takes the results of the LTRE analysis and checks
 # the total contribution that each vital rate has on ASR. In general, the 
