@@ -504,8 +504,18 @@ sensitivity_analysis <-
     
     
     
-    # store all results into a list
+    #### store all results into a list ----
     result <- list(ASR_pert_results = ASR_pert_results,
-                   lambda_pert_results = lambda_pert_results)
+                   lambda_pert_results = lambda_pert_results,
+                   ISR_pert_ASR = ISR_pert_ASR,
+                   ISR_pert_lambda = ISR_pert_lambda,
+                   HSR_pert_ASR = HSR_pert_ASR,
+                   HSR_pert_lambda = HSR_pert_lambda,
+                   k_pert_ASR = k_pert_ASR,
+                   k_pert_lambda = k_pert_lambda,
+                   h_pert_ASR = h_pert_ASR,
+                   h_pert_lambda = h_pert_lambda,
+                   vr_pert_ASR = vr_pert_ASR,
+                   vr_pert_lambda = vr_pert_lambda)
     
   }

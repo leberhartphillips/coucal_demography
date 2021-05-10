@@ -191,10 +191,10 @@ background <-
   # coord_flip() +
   annotate("rect", xmin = -Inf, xmax = Inf, 
            ymin = -Inf, ymax = 0, alpha = 0.6,
-           fill = brewer.pal(8, "Dark2")[c(2)]) +
+           fill = brewer.pal(8, "Dark2")[c(1)]) +
   annotate("rect", xmin = -Inf, xmax = Inf, 
            ymin = 0, ymax = Inf, alpha = 0.6,
-           fill = brewer.pal(8, "Dark2")[c(1)]) +
+           fill = brewer.pal(8, "Dark2")[c(2)]) +
   annotate("text", x = c(5), y = c(-0.5),
            label = c("\u2640"), size = 4,
            family = "Menlo",

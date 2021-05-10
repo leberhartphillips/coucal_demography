@@ -43,52 +43,52 @@ survival_rates_boot_summary <-
 
 BC_VR_treat <- 
   make_treat_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                    h = 1/2.9,
-                    HSR = 0.4955,
-                    k = 4,
-                    ISR = 0.738,
+                    h = BC_h,
+                    HSR = BC_HSR,
+                    k = BC_k,
+                    ISR = BC_ISR,
                     species = "BC")
 
 BC_VR_mprime_male <- 
   make_mprime_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                     h = 1/2.9,
-                     HSR = 0.4955,
-                     k = 4,
-                     ISR = 0.738,
+                     h = BC_h,
+                     HSR = BC_HSR,
+                     k = BC_k,
+                     ISR = BC_ISR,
                      species = "BC",
                      sex = "male")
 
 BC_VR_mprime_female <- 
   make_mprime_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                     h = 1/2.9,
-                     HSR = 0.4955,
-                     k = 4,
-                     ISR = 0.738,
+                     h = BC_h,
+                     HSR = BC_HSR,
+                     k = BC_k,
+                     ISR = BC_ISR,
                      species = "BC",
                      sex = "female")
 WBC_VR_treat <- 
   make_treat_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                    h = 1/1.1,
-                    HSR = 0.5198,
-                    k = 4,
-                    ISR = 0.524,
+                    h = WBC_h,
+                    HSR = WBC_HSR,
+                    k = WBC_k,
+                    ISR = WBC_ISR,
                     species = "WBC")
 
 WBC_VR_mprime_male <- 
   make_mprime_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                     h = 1/1.1,
-                     HSR = 0.5198,
-                     k = 4,
-                     ISR = 0.524,
+                     h = WBC_h,
+                     HSR = WBC_HSR,
+                     k = WBC_k,
+                     ISR = WBC_ISR,
                      species = "WBC",
                      sex = "male")
 
 WBC_VR_mprime_female <- 
   make_mprime_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                     h = 1/1.1,
-                     HSR = 0.5198,
-                     k = 4,
-                     ISR = 0.524,
+                     h = WBC_h,
+                     HSR = WBC_HSR,
+                     k = WBC_k,
+                     ISR = WBC_ISR,
                      species = "WBC",
                      sex = "female")
 
@@ -107,7 +107,7 @@ BC_treatment_ASR_analysis <-
              HSR = BC_VR_treat$HSR,
              ISR = BC_VR_treat$ISR, 
              immigrant_pop_size = 100,
-             iterations = 1000, 
+             iterations = 100, 
              num_boot = 1, 
              iter_add = 1,
              species = "BC")
@@ -122,7 +122,7 @@ WBC_treatment_ASR_analysis <-
              HSR = WBC_VR_treat$HSR,
              ISR = WBC_VR_treat$ISR, 
              immigrant_pop_size = 100,
-             iterations = 1000, 
+             iterations = 100, 
              num_boot = 1, 
              iter_add = 1,
              species = "BC")
@@ -137,7 +137,7 @@ BC_M_prime_ASR_analysis_male <-
              HSR = BC_VR_mprime_male$HSR,
              ISR = BC_VR_mprime_male$ISR,
              immigrant_pop_size = 100,
-             iterations = 1000,
+             iterations = 100,
              num_boot = 1,
              iter_add = 1,
              species = "BC")
@@ -152,7 +152,7 @@ BC_M_prime_ASR_analysis_female <-
              HSR = BC_VR_mprime_female$HSR,
              ISR = BC_VR_mprime_female$ISR,
              immigrant_pop_size = 100,
-             iterations = 1000,
+             iterations = 100,
              num_boot = 1,
              iter_add = 1,
              species = "BC")
@@ -167,7 +167,7 @@ WBC_M_prime_ASR_analysis_male <-
              HSR = WBC_VR_mprime_male$HSR,
              ISR = WBC_VR_mprime_male$ISR,
              immigrant_pop_size = 100,
-             iterations = 1000,
+             iterations = 100,
              num_boot = 1,
              iter_add = 1,
              species = "BC")
@@ -182,7 +182,7 @@ WBC_M_prime_ASR_analysis_female <-
              HSR = WBC_VR_mprime_female$HSR,
              ISR = WBC_VR_mprime_female$ISR,
              immigrant_pop_size = 100,
-             iterations = 1000,
+             iterations = 100,
              num_boot = 1,
              iter_add = 1,
              species = "BC")
