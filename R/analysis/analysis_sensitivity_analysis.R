@@ -18,6 +18,7 @@ WBC_HSR = 0.5198
 WBC_k = 4
 WBC_ISR = 0.524
 
+niter = 1000
 
 # load output
 BC_hazard_rate_boot <- 

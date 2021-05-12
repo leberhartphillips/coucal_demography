@@ -21,14 +21,14 @@ LTRE_analysis <-
                  contribution = numeric(7))
     
     # run a for loop to extract the parameter contributions
-    if (sex == "male"){
+    if (sex == "female"){
       # male rates scenario
       for(i in 1:nrow(LTRE_ASR))
       {
         LTRE_ASR[i, 2] <-
           
           # survival rates
-          ifelse(i < 5, (vital_rates[[i + 4]] - vital_rates[[i]]) * 
+          ifelse(i < 5, (vital_rates[[i]] - vital_rates[[i + 4]]) * 
                    Mprime_sens$ASR_pert_results$sensitivities[i],
                  
                  # HSR
@@ -46,7 +46,7 @@ LTRE_analysis <-
       for(i in 1:nrow(LTRE_lambda))
       {
         # survival rates
-        ifelse(i < 5, (vital_rates[[i + 4]] - vital_rates[[i]]) * 
+        ifelse(i < 5, (vital_rates[[i]] - vital_rates[[i + 4]]) * 
                  Mprime_sens$lambda_pert_results$sensitivities[i],
                
                # HSR
@@ -69,7 +69,7 @@ LTRE_analysis <-
         LTRE_ASR[i, 2] <-
           
           # survival rates
-          ifelse(i < 5, (vital_rates[[i]] - vital_rates[[i + 4]]) * 
+          ifelse(i < 5, (vital_rates[[i + 4]] - vital_rates[[i]]) * 
                    Mprime_sens$ASR_pert_results$sensitivities[i + 4],
                  
                  # HSR
@@ -88,7 +88,7 @@ LTRE_analysis <-
       for(i in 1:nrow(LTRE_lambda))
       {
         # survival rates
-        ifelse(i < 5, (vital_rates[[i]] - vital_rates[[i + 4]]) * 
+        ifelse(i < 5, (vital_rates[[i + 4]] - vital_rates[[i]]) * 
                  Mprime_sens$lambda_pert_results$sensitivities[i + 4],
                
                # HSR

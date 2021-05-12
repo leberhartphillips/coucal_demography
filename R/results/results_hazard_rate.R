@@ -75,8 +75,8 @@ CI <- 0.95
 sex_diff_background <-
   WBC_hazard_rate_boot_tidy$hazard_rates_boot %>% 
   bind_rows(BC_hazard_rate_boot_tidy$hazard_rates_boot) %>% 
-  select(species, age, sex, iter, fit) %>% 
-  pivot_wider(names_from = c(sex), values_from = c(fit)) %>% 
+  select(species, age, sex, iter, estimate) %>% 
+  pivot_wider(names_from = c(sex), values_from = c(estimate)) %>% 
   mutate(sex_diff = Male - Female,
          age_f = as.factor(age),
          species = factor(species, levels = c("BC", "WBC"))) %>% 
@@ -107,7 +107,7 @@ sex_diff_background <-
         axis.title.y = element_text(colour = "white"),
         axis.text.y  = element_text(colour = "white"),
         axis.ticks.y = element_line(colour = "white")) +
-  ylab("Estimated sex bias in daily survival rate") +
+  ylab("Estimated sex bias in daily mortality rate") +
   xlab("Age (Days since hatching)") + 
   scale_y_continuous(limits = c(-0.125, 0.125),
                      breaks = seq(from = -0.1, to = 0.1, by = 0.05),
@@ -129,8 +129,8 @@ sex_diff_background <-
 sex_diff_foreground <- 
   WBC_hazard_rate_boot_tidy$hazard_rates_boot %>% 
   bind_rows(BC_hazard_rate_boot_tidy$hazard_rates_boot) %>% 
-  select(species, age, sex, iter, fit) %>% 
-  pivot_wider(names_from = c(sex), values_from = c(fit)) %>% 
+  select(species, age, sex, iter, estimate) %>% 
+  pivot_wider(names_from = c(sex), values_from = c(estimate)) %>% 
   mutate(sex_diff = Male - Female,
          age_f = as.factor(age),
          species = factor(species, levels = c("BC", "WBC"))) %>% 
@@ -139,8 +139,21 @@ sex_diff_foreground <-
                    ucl_diff = stats::quantile(sex_diff, 1 - (1 - CI)/2, na.rm = TRUE),
                    avg_diff = mean(sex_diff),
                    med_diff = median(sex_diff),
-                   max_diff = max(sex_diff),
-                   min_diff = min(sex_diff)) %>% 
+                   # max_diff = max(sex_diff),
+                   # min_diff = min(sex_diff),
+                   lcl_Male = stats::quantile(Male, (1 - CI)/2, na.rm = TRUE),
+                   ucl_Male = stats::quantile(Male, 1 - (1 - CI)/2, na.rm = TRUE),
+                   # avg_Male = mean(Male),
+                   med_Male = median(Male),
+                   # max_Male = max(Male),
+                   # min_Male = min(Male),
+                   lcl_Female = stats::quantile(Female, (1 - CI)/2, na.rm = TRUE),
+                   ucl_Female = stats::quantile(Female, 1 - (1 - CI)/2, na.rm = TRUE),
+                   # avg_Female = mean(Female),
+                   med_Female = median(Female),
+                   # max_Female = max(Female),
+                   # min_Female = min(Female)
+                   ) %>% 
   ggplot(.) +
   luke_theme +
   theme(legend.position = "none",

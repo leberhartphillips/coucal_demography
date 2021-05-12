@@ -1,6 +1,35 @@
 To-do:
 
 stuff to finish for Wolfi by Wednesday:
-- analysis of harem size index (stats and variation)
 - hatching sex ratio analysis (stats and variation)
 - double check LTRE and sensitivity analysis (why does ISR have no effect?)
+
+After a thorough assement, I have decided that:
+- best to stick with a two-stage, two-sex, one-population matrix model
+  - stochastic dispersal between populations made the model chaotic
+  - deterministic dispersal between populations made the model the same as the single model
+
+Things to prepare for Wolfi:
+- general:
+  - figure of Safari's mixed effect sex-specific cox models for both species
+  - figure of species- and sex-specific hazard functions
+  - figure of mating system
+
+- single season juvenile sex ratio results:
+  - model overview
+  - figures of survival process:
+    1) real N dyanmics from hatch to day 70
+    2) sex ratio dynamics from hatch to day 70
+  - need to eventually do sensitivity analysis
+
+- two-sex matrix model:
+  - model overview
+  - figures:
+  1) ASR distributions
+  2) violin plots
+  3) LTRE bar plot
+  4) LTRE heatmap
+  
+Conclusions:
+1) ASR bias in BC comes from a post-juvenile phase
+2) changes in the ASR are most sensitive female biased mortality

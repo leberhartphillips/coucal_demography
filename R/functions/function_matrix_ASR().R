@@ -61,7 +61,7 @@ matrix_ASR <-
       F2 <- stage[2, i] * M["F_Adult", "F_Adult"] + I[2, 1]
       
       # Female freq-dep fecundity of Female chicks
-      M["F_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * (1 - HSR) )
+      M["F_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * (1 - HSR))
       
       # Female freq-dep fecundity of Male chicks
       M["M_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * HSR)

@@ -219,6 +219,7 @@ surv_diff_WBC_sexes_strata_hatch_order
 # ------------------------------------------------------------------------
 bcfit.by.sex <- survfit(Surv(postf_age, postf_status) ~ sex , data = dat_BC)
 bcfit.by.sex
+bcfit.by.sex <- survfit(Surv(ageC, statusC) ~ sex , data = dat_BC)
 
 ggsurvplot(bcfit.by.sex, 
            break.time.by = 10, 
@@ -268,6 +269,7 @@ BC_plot1
 #--------------------------------------------------------------------------------
 wbcfit.by.sex <- survfit(Surv(postf_age, postf_status) ~ sex , data = dat_WBC)
 wbcfit.by.sex
+wbcfit.by.sex <- survfit(Surv(ageC, statusC) ~ sex , data = dat_WBC)
 
 ggsurvplot(wbcfit.by.sex, break.time.by = 10, risk.table = TRUE) #  plot the survival## ok
 
