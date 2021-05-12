@@ -234,21 +234,28 @@ BC_plot1 <- ggsurvplot(bcfit.by.sex,     # survfit object with calculated statis
                        risk.table = F,  # "abs_pct"show number and percent of the individuals at at risk
                        ncensor.plot = F,
                        pval = TRUE,  # show p-value of log-rank test.
-                       pval.coord = c(0, 0.2),
+                       pval.coord = c(50, 0.1),
                        pval.size = 7, # numeric value specifying the p-value text size. Default is 5.
                        pval.method = TRUE,
-                       pval.method.coord = c(0, 0.250),
+                       pval.method.coord = c(50, 0.175),
                        pval.method.size = 7,
                        conf.int = T,  # show confidence intervals for point estimaes of survival curves.
                        ylab = "Cumulative Survival",
-                       xlab = "Time (days)",
-                       xlim = c(0,110),    # present narrower X axis, but not affect survival estimates.
+                       xlab = "Age (Days since hatching)",
+                       xlim = c(0,70),    # present narrower X axis, but not affect survival estimates.
                        break.time.by = 10, 
-                       legend =  c(0.11, 0.4), # legend = "top", # legend =  c(x, y)
+                       legend =  c(0.4, 0.2), # legend = "top", # legend =  c(x, y)
                        font.legend = c(20, "plain", "black"),
                        legend.title = " ", # "Sex",
                        legend.labs = c("Female (N = 66)", "Male     (N = 59)")) 
 BC_plot1
+ggsave(BC_plot1$plot,
+       filename = "products/figures/BC_cumulative_survival.jpeg",
+       # compression = "none",
+       width = 6,
+       height = 6,
+       units = "in",
+       dpi = 600)
 
 BC_plot1 <- 
   ggpar(BC_plot1,
@@ -277,21 +284,29 @@ WBC_plot1 <- ggsurvplot(wbcfit.by.sex,     # survfit object with calculated stat
                        risk.table = F,  # "abs_pct"show number and percent of the individuals at at risk
                        ncensor.plot = F,
                        pval = TRUE,  # show p-value of log-rank test.
-                       pval.coord = c(0, 0.2),
+                       pval.coord = c(50, 0.1),
                        pval.size = 7, # numeric value specifying the p-value text size. Default is 5.
                        pval.method = TRUE,
-                       pval.method.coord = c(0, 0.250),
+                       pval.method.coord = c(50, 0.175),
                        pval.method.size = 7,
                        conf.int = T,  # show confidence intervals for point estimaes of survival curves.
-                       ylab = "Survival probability",
-                       xlab = "Time (days)",
-                       xlim = c(0,126),    # present narrower X axis, but not affect survival estimates.
+                       ylab = "Cumulative Survival",
+                       xlab = "Age (Days since hatching)",
+                       xlim = c(0,70),    # present narrower X axis, but not affect survival estimates.
                        break.time.by = 10, 
-                       legend =  c(0.11, 0.4), # legend = "top", # legend =  c(x, y)
+                       legend =  c(0.4, 0.2), # legend = "top", # legend =  c(x, y)
                        font.legend = c(20, "plain", "black"),
                        legend.title = " ", # "Sex",
                        legend.labs = c("Female (N = 50)", "Male     (N = 57)")) 
 WBC_plot1
+
+ggsave(WBC_plot1$plot,
+       filename = "products/figures/WBC_cumulative_survival.jpeg",
+       # compression = "none",
+       width = 6,
+       height = 6,
+       units = "in",
+       dpi = 600)
 
 WBC_plot1 <- ggpar(WBC_plot1,
   font.title    = c(20, "bold", "black"),         

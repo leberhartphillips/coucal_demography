@@ -41,6 +41,8 @@ vital_rate_theme <-
 
 theme_set(vital_rate_theme)
 
+
+
 LTRE_ASR_plot_background <-
   ggplot2::ggplot(data = LTRE_coucal_ASR,
                   aes(x = parameter, y = contribution, fill = parameter)) +
@@ -167,11 +169,17 @@ prop_contribution_table <-
                                         "Hatching sex ratio")))
 
 LTRE_heatmap <- 
-  ggplot(filter(prop_contribution_table, parameter1 %in% c("Fledgling survival",
+  ggplot(filter(prop_contribution_table, parameter1 %in% c(#"Immigrant sex ratio",
+                                                           "Mating system",
+                                                           "Adult survival",
+                                                           "Fledgling survival",
                                                            "Groundling survival",
                                                            "Nestling survival",
                                                            "Hatching sex ratio") & 
-                  parameter2 %in% c("Fledgling survival",
+                  parameter2 %in% c(#"Immigrant sex ratio",
+                                    "Mating system",
+                                    "Adult survival",
+                                    "Fledgling survival",
                                     "Groundling survival",
                                     "Nestling survival",
                                     "Hatching sex ratio")),

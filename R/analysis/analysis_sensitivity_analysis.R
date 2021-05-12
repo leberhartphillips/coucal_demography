@@ -28,6 +28,14 @@ BC_hazard_rate_boot <-
 WBC_hazard_rate_boot <- 
   readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
 
+# load output
+BC_hazard_rate_boot_tidy <- 
+  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy.rds")
+
+# load output
+WBC_hazard_rate_boot_tidy <- 
+  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy.rds")
+
 BC_hazard_rate_boot_tidy$vital_rate_ests_boot$iter <- as.factor(BC_hazard_rate_boot_tidy$vital_rate_ests_boot$iter)
 WBC_hazard_rate_boot_tidy$vital_rate_ests_boot$iter <- as.factor(WBC_hazard_rate_boot_tidy$vital_rate_ests_boot$iter)
 

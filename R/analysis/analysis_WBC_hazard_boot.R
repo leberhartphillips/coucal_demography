@@ -72,6 +72,58 @@ WBC_all_dat <-
   status_dat_all %>% 
   filter(species == "WBC")
 
+# load WBC bootstrapped sex specific adult survival estimates
+load("../coucal_ASR/coucal_ASR/output/wrangled/White-browed_Coucal_bootstrap_result_clean.rds")
+
+WBC_adult_surival_boot_out <- 
+  WBC_boot_out$survival_rates_boot %>% 
+  filter(stage == "adult" & rate == "survival")
+
+# calculate the sd of the ISR to parameterize the ISR distribution
+WBC_n_years = 12
+WBC_ISR_mean <- 0.524
+WBC_ISR_CI <- 0.027
+WBC_ISR_sd <- 
+  sqrt(WBC_n_years) * ((WBC_ISR_mean + WBC_ISR_CI) - 
+                         (WBC_ISR_mean - WBC_ISR_CI)) / 3.92
+
+#### haz and surv Bootstrap run ----
+niter = 1000
+set.seed(14)
+
+# run bootstrap procedure on Black Coucals
+WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv <-
+  pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
+           offspring = WBC_all_dat,
+           k = 4, 
+           HSR = 0.5198, 
+           h = 1/1.1, 
+           egg_survival = 0.18, 
+           adult_surival_boot_out = WBC_adult_surival_boot_out,
+           ISR_distribution = c(WBC_ISR_mean, WBC_ISR_sd),
+           immigrant_pop_size = 100,
+           fledge_age = 15,
+           flight_age = 32,
+           bootstrap_name = "WBC_boot_w_WBC_ad_surv",
+           species = "WBC",
+           iter_add = 1,
+           prefix_number = "boot_w_WBC_ad_surv",
+           max_time = 70)
+
+# save model output
+saveRDS(object = WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv, 
+        file = "output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv.rds")
+
+# clean up the output from the bootstrap procedure and save as rds
+WBC_hazard_rate_boot_tidy <- 
+  hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
+                          output_dir = "output/bootstraps/hazard/cooked/",
+                          rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv")
+
+# save model output
+saveRDS(object = WBC_hazard_rate_boot_tidy, 
+        file = "output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy.rds")
+
 #### Bootstrap run ----
 niter = 1000
 set.seed(14)

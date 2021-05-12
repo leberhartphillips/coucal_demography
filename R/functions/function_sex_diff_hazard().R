@@ -16,17 +16,17 @@ sex_diff_hazard <- function(boot_out_list, niter) {
   # female and male survival rates for each stage.
   for(i in 1:niter){
     Adult <- 
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][7] -
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][2]
+      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][2] -
+      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][7]
     Fledgling <- 
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][8] -
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][3]
+      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][3] -
+      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][8]
     Groundling <- 
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][9] -
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][4]
+      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][4] -
+      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][9]
     Nestling <- 
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][10] -
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][5]
+      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][5] -
+      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][10]
     
     sex_diff_surv_output[i, 1] <- Adult
     sex_diff_surv_output[i, 2] <- Fledgling

@@ -72,12 +72,64 @@ BC_all_dat <-
   status_dat_all %>% 
   filter(species == "BC")
 
+# load WBC bootstrapped sex specific adult survival estimates
+load("../coucal_ASR/coucal_ASR/output/wrangled/White-browed_Coucal_bootstrap_result_clean.rds")
+
+WBC_adult_surival_boot_out <- 
+  WBC_boot_out$survival_rates_boot %>% 
+  filter(stage == "adult" & rate == "survival")
+
+# calculate the sd of the ISR to parameterize the ISR distribution
+BC_n_years = 16
+BC_ISR_mean <- 0.738
+BC_ISR_CI <- 0.037
+BC_ISR_sd <- 
+  sqrt(BC_n_years) * ((BC_ISR_mean + BC_ISR_CI) - 
+                        (BC_ISR_mean - BC_ISR_CI)) / 3.92
+
+#### haz and surv Bootstrap run ----
+niter = 1000
+set.seed(14)
+
+# run bootstrap procedure on Black Coucals
+BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv <-
+  pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
+           offspring = BC_all_dat,
+           k = 4,
+           HSR = 0.4955,
+           h = 1/2.9,
+           egg_survival = 0.32,
+           adult_surival_boot_out = WBC_adult_surival_boot_out,
+           ISR_distribution = c(BC_ISR_mean, BC_ISR_sd),
+           immigrant_pop_size = 100,
+           fledge_age = 15,
+           flight_age = 36,
+           bootstrap_name = "BC_boot_w_WBC_ad_surv",
+           species = "BC",
+           iter_add = 1,
+           prefix_number = "boot_w_WBC_ad_surv",
+           max_time = 70)
+
+# save model output
+saveRDS(object = BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv, 
+        file = "output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv.rds")
+
+# clean up the output from the bootstrap procedure and save as rds
+BC_hazard_rate_boot_tidy <- 
+  hazard_boot_out_wrangle(species = "BC", niter = 1000, 
+                          output_dir = "output/bootstraps/hazard/cooked/",
+                          rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv")
+
+# save model output
+saveRDS(object = BC_hazard_rate_boot_tidy, 
+        file = "output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy.rds")
+
 #### Bootstrap run ----
 niter = 1000
 set.seed(14)
 
 # run bootstrap procedure on Black Coucals
-BC_hazard_ASR_bootstrap_result_one <-
+BC_hazard_ASR_bootstrap_result_50_ISR <-
   pbsapply(1:niter, run_bootstrap_hazard_ASR,
            offspring = BC_all_dat,
            k = 4,
@@ -85,16 +137,16 @@ BC_hazard_ASR_bootstrap_result_one <-
            h = 1/2.9,
            egg_survival = 0.32,
            adult_survival_rate = 0.3,
-           ISR = 0.738,
+           ISR = 0.5,
            immigrant_pop_size = 100,
            fledge_age = 15,
            flight_age = 36,
-           bootstrap_name = "BC_boot_one",
+           bootstrap_name = "BC_boot_test",
            species = "BC",
            iter_add = 1,
-           prefix_number = "boot_one_",
-           time_vector = seq(0, 70, 1))
+           prefix_number = "boot_test_",
+           max_time = 70)
 
 # save model output
-saveRDS(object = BC_hazard_ASR_bootstrap_result_one, 
-        file = "output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_one.rds")
+saveRDS(object = BC_hazard_ASR_bootstrap_result_50_ISR, 
+        file = "output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_50_ISR.rds")

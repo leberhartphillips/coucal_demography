@@ -47,13 +47,60 @@ JSR_boot_summary <-
                    max_JSR = max(JSR, na.rm = TRUE),
                    min_JSR = min(JSR, na.rm = TRUE))
 
+flight_dat <- 
+  data.frame(species = c("BC","WBC"),
+             end_nestling = c(13, 14),
+             end_nestling_lower = c(12, 13),
+             end_nestling_upper = c(13, 15),
+             end_groundling = c(36, 32),
+             end_groundling_lower = c(34, 29),
+             end_groundling_upper = c(38, 35))
+
 #### plot JSR dynamics and distribution ----
-ggplot(data = bind_rows(BC_JSR_out,
-                        BC_JSR_out)) +
+JSR_dynamics_plot <- 
+  ggplot(data = bind_rows(BC_JSR_out,
+                        WBC_JSR_out)) +
   geom_line(aes(y = JSR, x = as.numeric(age), group = iteration),
-            alpha = 0.05) +
-  geom_hline(yintercept = 0.5, color = "white") +
-  facet_grid(species ~ .)
+            alpha = 0.05, color = "black") +
+  annotate("rect", ymin=0, ymax=0.5, xmin=0, xmax = 70, alpha=0.6,
+           fill= brewer.pal(8, "Dark2")[c(2)]) +
+  annotate("rect", ymin=0.5, ymax=1, xmin=0, xmax = 70, alpha=0.6,
+           fill= brewer.pal(8, "Dark2")[c(1)]) +
+  annotate("text", y = c(0.3), x = c(10),
+           label = c("\u2640"), size = 4, colour = "grey10",
+           family="Menlo", vjust = c(0.5), hjust = c(0.5)) +
+  annotate("text", y = c(0.7), x = c(10),
+           label = c("\u2642"), size = 4, colour = "grey10",
+           family="Menlo", vjust = c(0.5), hjust = c(0.5)) +
+  geom_hline(yintercept = 0.5, color = "black") +
+  geom_vline(data = flight_dat,
+             aes(xintercept = end_nestling), 
+             linetype = "dashed", alpha = 0.5, color = "grey20") +
+  geom_vline(data = flight_dat,
+             aes(xintercept = end_groundling),
+             linetype = "dashed", alpha = 0.5, color = "grey20") +
+  facet_grid(species ~ ., labeller = as_labeller(species_names)) +
+  ylab("Juvenile sex ratio") +
+  xlab("Age (Days since hatching)") +
+  annotate(geom = "text", y = 0.9, x = 15/2,
+           label = "nestling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5) +
+  annotate(geom = "text", y = 0.9, x = (36 - 15)/2 + 15,
+           label = "groundling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5) +
+  annotate(geom = "text", y = 0.9, x = (70 - 36)/2 + 36,
+           label = "fledgling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5) +
+  scale_x_continuous(limits = c(0, 70), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0, 1), expand = c(0, 0))
+
+ggsave(JSR_dynamics_plot,
+       filename = "products/figures/JSR_dynamics_plot.jpeg",
+       # compression = "none",
+       width = 6,
+       height = 6,
+       units = "in",
+       dpi = 600)
 
 # Figure_2b <- 
   ggplot() +

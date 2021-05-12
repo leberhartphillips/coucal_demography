@@ -34,6 +34,24 @@ WBC_hazard_rate_boot_tidy <-
                           output_dir = "output/bootstraps/hazard/cooked/",
                           rds_file = "_hazard_ASR_bootstrap_result_one")
 
+# load output
+BC_hazard_rate_boot_tidy <- 
+  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy.rds")
+
+# load output
+WBC_hazard_rate_boot_tidy <- 
+  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy.rds")
+
+flight_dat <- 
+  data.frame(species = c("BC","WBC"),
+             end_nestling = c(13, 14),
+             end_nestling_lower = c(12, 13),
+             end_nestling_upper = c(13, 15),
+             end_groundling = c(36, 32),
+             end_groundling_lower = c(34, 29),
+             end_groundling_upper = c(38, 35))
+  
+
 # plot each iteration's hazard function
 surv_plot <-
   ggplot() +
@@ -41,14 +59,23 @@ surv_plot <-
   theme(legend.position = "none",
         strip.background = element_blank(),
         strip.text = element_text(size = 12, face = "italic")) +
-  geom_vline(xintercept = 36, linetype = "dashed", alpha = 0.5, color = "grey20") +
-  geom_vline(xintercept = 15, linetype = "dashed", alpha = 0.5, color = "grey20") +
+  geom_vline(data = flight_dat,
+             aes(xintercept = end_nestling), linetype = "dashed", alpha = 0.5, color = "grey20") +
+  geom_vline(data = flight_dat,
+             aes(xintercept = end_groundling),
+             linetype = "dashed", alpha = 0.5, color = "grey20") +
+  # annotate(data = flight_dat,
+  #          aes(xmin = end_nestling_lower, xmax = end_nestling_upper), 
+  #          ymin = -Inf, ymax = Inf, alpha = 0.2, fill = "grey50", geom = "rect") +
+  # annotate(data = flight_dat, 
+  #          aes(xmin = end_groundling_lower, xmax = end_groundling_upper), 
+  #          ymin = -Inf, ymax = Inf, alpha = 0.2, fill = "grey50", geom = "rect") +
   geom_line(data = bind_rows(BC_hazard_rate_boot_tidy$hazard_rates_boot,
                              WBC_hazard_rate_boot_tidy$hazard_rates_boot),
             aes(x = age, y = estimate, 
                 group = interaction(iter, sex), 
                 color = sex),
-            alpha = 0.05) +
+            alpha = 0.04) +
   scale_colour_manual(values = rev(plot_palette_sex)) +
   ylab("Estimated daily survival rate") +
   xlab("Age (Days since hatching)") + 
@@ -69,6 +96,14 @@ surv_plot <-
            label = "fledgling",
            color = "black", size = 3, fontface = 'italic', hjust = 0.5)
 surv_plot
+
+ggsave(surv_plot,
+       filename = "products/figures/offsring_hazard_functions.jpeg",
+       # compression = "none",
+       width = 6,
+       height = 6,
+       units = "in",
+       dpi = 600)
 
 CI <- 0.95
 
@@ -161,8 +196,11 @@ sex_diff_foreground <-
         strip.text = element_text(size = 12, face = "italic"),
         panel.background = element_rect(fill = "transparent", colour = NA),
         plot.background = element_rect(fill = "transparent", colour = NA)) +
-  geom_vline(xintercept = "36", linetype = "dashed", alpha = 0.5, color = "black") +
-  geom_vline(xintercept = "15", linetype = "dashed", alpha = 0.5, color = "black") +
+  geom_vline(data = flight_dat,
+             aes(xintercept = end_nestling), linetype = "dashed", alpha = 0.5, color = "grey20") +
+  geom_vline(data = flight_dat,
+             aes(xintercept = end_groundling),
+             linetype = "dashed", alpha = 0.5, color = "grey20") +
   geom_errorbar(aes(ymin = lcl_diff, ymax = ucl_diff, y = avg_diff,
                     x = age_f), 
                  color = "white", size = 0.3, linetype = "solid") +

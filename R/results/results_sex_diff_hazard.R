@@ -34,13 +34,23 @@ WBC_hazard_rate_boot_tidy <-
                           output_dir = "output/bootstraps/hazard/cooked/",
                           rds_file = "_hazard_ASR_bootstrap_result_one")
 
+# load output
+BC_hazard_rate_boot_tidy <- 
+  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy.rds")
+
+# load output
+WBC_hazard_rate_boot_tidy <- 
+  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy.rds")
+
 # calculate the sex differences in stage specific rates
 BC_sex_diff_hazard_output <- 
-  sex_diff_hazard(BC_hazard_rate_boot_tidy, niter = 1000) %>% 
+  sex_diff_hazard(boot_out_list = BC_hazard_rate_boot_tidy, 
+                  niter = 1000) %>% 
   mutate(species = "BC")
 
 WBC_sex_diff_hazard_output <- 
-  sex_diff_hazard(WBC_hazard_rate_boot_tidy, niter = 1000) %>% 
+  sex_diff_hazard(boot_out_list = WBC_hazard_rate_boot_tidy, 
+                  niter = 1000) %>% 
   mutate(species = "WBC")
 
 # consolidate results
@@ -266,12 +276,12 @@ HSR_plot <-
                               "Fledgling" = expression(S["f"]),
                               "Adult" = expression(phi["ad"])))
 
-# tiff(filename = "figs_and_tabs/demographic_differences_plot.tiff",
-#      compression = "none",
+# jpeg(filename = "products/figures/demographic_differences_plot.jpeg",
+#      # compression = "none",
 #      width = 4.75,
 #      height = 2,
 #      units = "in",
-#      res = 1200)
+#      res = 600)
 
 grid.newpage()
 grid::pushViewport( grid::viewport(

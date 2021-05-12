@@ -2,7 +2,11 @@ To-do:
 
 stuff to finish for Wolfi by Wednesday:
 - hatching sex ratio analysis (stats and variation)
-- double check LTRE and sensitivity analysis (why does ISR have no effect?)
+- double check LTRE and sensitivity analysis (why does ISR have no effect? -> probably because adult survival is equal between sexes in that version of the model)
+
+- sensitivity and LTRE analysis on the single year model
+- try extracting sex-specific adult survival of both species from the radio tagging data
+- run a model with 50/50 HSR for each species
 
 After a thorough assement, I have decided that:
 - best to stick with a two-stage, two-sex, one-population matrix model
@@ -11,7 +15,7 @@ After a thorough assement, I have decided that:
 
 Things to prepare for Wolfi:
 - general:
-  - figure of Safari's mixed effect sex-specific cox models for both species
+  - figure of Safari's sex-specific cox models for both species
   - figure of species- and sex-specific hazard functions
   - figure of mating system
 
@@ -29,6 +33,7 @@ Things to prepare for Wolfi:
   2) violin plots
   3) LTRE bar plot
   4) LTRE heatmap
+  5) Sensitivity analysis line plots
   
 Conclusions:
 1) ASR bias in BC comes from a post-juvenile phase

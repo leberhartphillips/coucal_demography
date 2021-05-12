@@ -180,7 +180,7 @@ BC_plot1 <- ggsurvplot(bcfit.by.sex,     # survfit object with calculated statis
  conf.int = T,  # show confidence intervals for point estimaes of survival curves.
  ylab = "Survival probability",
  xlab = "Time (days)",
- xlim = c(0,1130),    # present narrower X axis, but not affect survival estimates.
+ xlim = c(0,130),    # present narrower X axis, but not affect survival estimates.
  break.time.by = 100, 
  legend =  c(0.15, 0.8), # legend = "top", # legend =  c(x, y)
  font.legend = c(20, "plain", "black"),
@@ -224,7 +224,7 @@ WBC_plot1 <- ggsurvplot(wbcfit.by.sex,               # survfit object with calcu
   conf.int = T, # show confidence intervals for point estimaes of survival curves.
   ylab = "Survival probability",
   xlab = "Time (days)",
-  xlim = c(0,2060),        # present narrower X axis, but not affect survival estimates.
+  xlim = c(0,200),        # present narrower X axis, but not affect survival estimates.
   break.time.by = 100, 
   legend =  c(0.15, 0.8), # legend = "top", # legend =  c(x, y)
   font.legend = c(20, "plain", "black"),
