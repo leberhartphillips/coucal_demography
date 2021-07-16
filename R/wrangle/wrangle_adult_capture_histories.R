@@ -2,17 +2,24 @@ source("scripts/01_libraries.R")
 
 # import raw csv data into R
 detect_dat <- 
-  read_xlsx("data/corrected_data/All_coucal_waypoints_2001_2019_20200202.xlsx", na = "NA", col_types = "text") %>% 
-  select(species, ring_ID, sex, year, site, age_status, date_dec) %>% 
+  read_xlsx("data/raw/All_coucal_waypoints_2001_2019_20200202.xlsx", na = "NA", col_types = "text") %>% 
+  dplyr::select(species, ring_ID, sex, year, site, age_status, date_dec) %>% 
   mutate(month = str_sub(date_dec, start = 5, end = 6),
          day = str_sub(date_dec, start = 7, end = 8)) %>% 
   mutate(date = as.Date(paste(year, month, day, sep = "-"), format = "%Y-%m-%d")) %>% 
-  select(-month, -day, -date_dec) %>% 
+  dplyr::select(-month, -day, -date_dec) %>% 
   mutate(across(c("sex", "site", "age_status"), tolower)) %>%
-  mutate(sex = ifelse(sex == "female", "F", ifelse(sex == "male", "M", "XXX")),
+  mutate(sex = ifelse(sex == "Female", "F", ifelse(sex == "Male", "M", "XXX")),
          age_status = ifelse(age_status == "adult", "A", ifelse(age_status == "juvenile", "J", "XXX")),
          ring_ID = str_replace_all(string = ring_ID, fixed(" "), "")) %>% 
-  mutate(across(c("species", "ring_ID", "sex", "site", "age_status"), as.factor))
+  mutate(across(c("species", "ring_ID", "sex", "site", "age_status"), as.factor)) %>% 
+  mutate(sex = ifelse(str_detect(ring_ID, pattern = "[Ff]emale"), "F",
+                      ifelse(str_detect(ring_ID, pattern = "[Mm]ale"), "M", sex)))
+
+detect_dat %>% 
+  dplyr::select(-date) %>% 
+  distinct()
+  
 
 # assess the first and last year of study for each species
 detect_dat %>% 

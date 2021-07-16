@@ -16,7 +16,7 @@ sapply(data.sources, load, .GlobalEnv)
 
 # load output
 BC_JSR_out <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_hazard_JSR_bootstrap_result.rds")
+  readRDS("output/bootstraps/hazard/cooked/BC_hazard_JSR_bootstrap_result_stoch.rds")
 
 # load output
 WBC_JSR_out <- 

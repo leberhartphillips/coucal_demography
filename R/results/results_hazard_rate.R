@@ -6,7 +6,7 @@ source("R/project/project_plotting.R")
 function.sources = list.files(path = "R/functions", 
                               pattern = "*\\().R$", full.names = TRUE, 
                               ignore.case = TRUE)
-sapply(function.sources, source, .GlobalEnv)
+try (sapply(function.sources, source), silent = TRUE)
 
 # load capture histories
 data.sources = list.files(path = "data/cooked", 
@@ -36,11 +36,11 @@ WBC_hazard_rate_boot_tidy <-
 
 # load output
 BC_hazard_rate_boot_tidy <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy.rds")
+  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy_stoc.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy.rds")
+  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 
 flight_dat <- 
   data.frame(species = c("BC","WBC"),
@@ -51,6 +51,15 @@ flight_dat <-
              end_groundling_lower = c(34, 29),
              end_groundling_upper = c(38, 35))
   
+filter(BC_hazard_rate_boot_tidy$hazard_rates_boot, age == 0) %>% 
+  ggplot() +
+  geom_histogram(aes(fit), binwidth = 0.001) +
+  facet_grid(sex~ .)
+
+filter(WBC_hazard_rate_boot_tidy$hazard_rates_boot, age == 12) %>% 
+  ggplot() +
+  geom_histogram(aes(fit), binwidth = 0.001) +
+  facet_grid(sex~ .)
 
 # plot each iteration's hazard function
 surv_plot <-
@@ -110,7 +119,7 @@ CI <- 0.95
 sex_diff_background <-
   WBC_hazard_rate_boot_tidy$hazard_rates_boot %>% 
   bind_rows(BC_hazard_rate_boot_tidy$hazard_rates_boot) %>% 
-  select(species, age, sex, iter, estimate) %>% 
+  dplyr::select(species, age, sex, iter, estimate) %>% 
   pivot_wider(names_from = c(sex), values_from = c(estimate)) %>% 
   mutate(sex_diff = Male - Female,
          age_f = as.factor(age),
@@ -135,7 +144,7 @@ sex_diff_background <-
   luke_theme +
   theme(legend.position = "none",
         strip.background = element_blank(),
-        strip.text = element_text(size = 12, face = "italic"),
+        strip.text = element_text(size = 12, face = "italic", color = "white"),
         axis.title.x = element_text(colour = "white"),
         axis.text.x  = element_text(colour = "white"),
         axis.ticks.x = element_line(colour = "white"),
@@ -164,7 +173,7 @@ sex_diff_background <-
 sex_diff_foreground <- 
   WBC_hazard_rate_boot_tidy$hazard_rates_boot %>% 
   bind_rows(BC_hazard_rate_boot_tidy$hazard_rates_boot) %>% 
-  select(species, age, sex, iter, estimate) %>% 
+  dplyr::select(species, age, sex, iter, estimate) %>% 
   pivot_wider(names_from = c(sex), values_from = c(estimate)) %>% 
   mutate(sex_diff = Male - Female,
          age_f = as.factor(age),

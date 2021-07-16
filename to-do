@@ -38,3 +38,27 @@ Things to prepare for Wolfi:
 Conclusions:
 1) ASR bias in BC comes from a post-juvenile phase
 2) changes in the ASR are most sensitive female biased mortality
+
+-------------------------
+July 14, 2021
+
+Egg survival distribution (see "R/analysis/analysis_egg_survival.R")
+
+-------------------------
+July 15, 2021
+
+clutch size distribution (see "R/analysis/analysis_clutch_size.R")
+immigration sex ratio distribution (see "R/analysis/analysis_immigration_sex_ratio.R")
+mating system distribution (see "R/analysis/analysis_mating_system.R")
+hatching sex ratio distribution (see "R/analysis/analysis_hatching_sex_ratio.R")
+age first flight distribution (see "R/analysis/analysis_age_first_flight.R")
+fledge age distribution (see "R/analysis/analysis_fledge_age.R")
+
+-------------------------
+- add (mean, sd) of the above traits to the hazard bootstrap
+- re-run completely stochastic model
+- tidy up repo
+- clean up WBC adult CJS scripts (and wrangle)
+
+
+

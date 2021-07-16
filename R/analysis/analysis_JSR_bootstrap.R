@@ -35,16 +35,20 @@ BC_ISR = 0.738
 BC_egg_survival = 0.32
 
 BC_JSR_run <- 
-  JSR_bootstrap(niter = 1000, 
-                F_rates = BC_F_rates,
-                M_rates = BC_M_rates, 
-                immigrant_pop_size = 100, 
-                ISR = BC_ISR, h = BC_h, k = BC_k, species = "BC",
-                HSR = BC_HSR, egg_survival = BC_egg_survival)
+  JSR_bootstrap_stoch(niter = 1000, 
+                      F_rates = BC_F_rates,
+                      M_rates = BC_M_rates, 
+                      immigrant_pop_size = 100, 
+                      ISR_rates = filter(BC_hazard_rate_boot_tidy$vital_rate_ests_boot, stage == "ISR"), 
+                      h_rates = filter(BC_hazard_rate_boot_tidy$vital_rate_ests_boot, stage == "h"), 
+                      k_rates = filter(BC_hazard_rate_boot_tidy$vital_rate_ests_boot, stage == "k"), 
+                      species = "BC",
+                      HSR_rates = filter(BC_hazard_rate_boot_tidy$vital_rate_ests_boot, stage == "HSR"), 
+                      egg_survival_rates = filter(BC_hazard_rate_boot_tidy$vital_rate_ests_boot, stage == "egg"))
 
 # save model output
 saveRDS(object = BC_JSR_run, 
-        file = "output/bootstraps/hazard/cooked/BC_hazard_JSR_bootstrap_result.rds")
+        file = "output/bootstraps/hazard/cooked/BC_hazard_JSR_bootstrap_result_stoch.rds")
 
 #### Run WBC JSR Bootstrap ----
 WBC_F_rates <- 

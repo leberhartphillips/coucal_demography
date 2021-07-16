@@ -10,28 +10,52 @@ sex_diff_hazard <- function(boot_out_list, niter) {
   sex_diff_surv_output <- data.frame(Adult = niter,
                                      Fledgling = niter,
                                      Groundling = niter,
-                                     Nestling = niter)
+                                     Nestling = niter,
+                                     ISR = niter,
+                                     HSR = niter,
+                                     h = niter)
   
   # for loop to go through each iteration and calculate the difference between 
   # female and male survival rates for each stage.
   for(i in 1:niter){
     Adult <- 
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][2] -
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][7]
+      pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "adult" & rate == "survival" & sex == "Female"), value) -
+      pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "adult" & rate == "survival" & sex == "Male"), value)
     Fledgling <- 
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][3] -
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][8]
+      pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "fledgling" & rate == "survival" & sex == "Female"), value) -
+      pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "fledgling" & rate == "survival" & sex == "Male"), value)
     Groundling <- 
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][4] -
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][9]
+      pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "groundling" & rate == "survival" & sex == "Female"), value) -
+      pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "groundling" & rate == "survival" & sex == "Male"), value)
     Nestling <- 
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][5] -
-      boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), 2][10]
+      pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "nestling" & rate == "survival" & sex == "Female"), value) -
+      pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "nestling" & rate == "survival" & sex == "Male"), value)
+    ISR <- 
+      0.5 - pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "ISR"), value)
+    HSR <- 
+      0.5 - pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "HSR"), value)
+    h <- 
+      1 - pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "h"), value)
     
-    sex_diff_surv_output[i, 1] <- Adult
-    sex_diff_surv_output[i, 2] <- Fledgling
-    sex_diff_surv_output[i, 3] <- Groundling
-    sex_diff_surv_output[i, 4] <- Nestling
+    sex_diff_surv_output[i, 1] <- ifelse(length(Adult) > 0, Adult, NA)
+    sex_diff_surv_output[i, 2] <- ifelse(length(Fledgling) > 0, Fledgling, NA)
+    sex_diff_surv_output[i, 3] <- ifelse(length(Groundling) > 0, Groundling, NA)
+    sex_diff_surv_output[i, 4] <- ifelse(length(Nestling) > 0, Nestling, NA)
+    sex_diff_surv_output[i, 5] <- ifelse(length(ISR) > 0, ISR, NA)
+    sex_diff_surv_output[i, 6] <- ifelse(length(HSR) > 0, HSR, NA)
+    sex_diff_surv_output[i, 7] <- ifelse(length(h) > 0, h, NA)
+    
     
   }
   

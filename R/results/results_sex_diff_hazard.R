@@ -6,7 +6,7 @@ source("R/project/project_plotting.R")
 function.sources = list.files(path = "R/functions", 
                               pattern = "*\\().R$", full.names = TRUE, 
                               ignore.case = TRUE)
-sapply(function.sources, source, .GlobalEnv)
+try (sapply(function.sources, source), silent = TRUE)
 
 # load capture histories
 data.sources = list.files(path = "data/cooked", 
@@ -36,11 +36,11 @@ WBC_hazard_rate_boot_tidy <-
 
 # load output
 BC_hazard_rate_boot_tidy <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy.rds")
+  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy_stoc.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy.rds")
+  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 
 # calculate the sex differences in stage specific rates
 BC_sex_diff_hazard_output <- 
@@ -57,11 +57,21 @@ WBC_sex_diff_hazard_output <-
 sex_diff_survival_output <- 
   bind_rows(BC_sex_diff_hazard_output,
             WBC_sex_diff_hazard_output) %>% 
+  filter(stage != "h") %>% 
   mutate(stage = factor(stage, 
-                        levels = c("Nestling", "Groundling", 
-                                   "Fledgling", "Adult")),
+                        levels = c("HSR", "Nestling", "Groundling", 
+                                   "Fledgling", "Adult", "h", "ISR")),
          species = factor(species, 
                           levels = c("BC", "WBC")))
+
+sex_diff_survival_output %>% 
+  filter(difference < -1 & difference > 1)
+
+ggplot(data = filter(sex_diff_survival_output, stage != "h")) +
+  geom_histogram(aes(difference), binwidth = 0.01) +
+  facet_grid(stage ~ species) +
+  scale_x_continuous(limits = c(-0.5, 0.5)) +
+  geom_vline(xintercept = 0)
 
 # calculate some summary statistics
 sex_diff_survival_summary <- 
@@ -71,11 +81,12 @@ sex_diff_survival_summary <-
                    median = median(difference, na.rm = TRUE),
                    var = var(difference, na.rm = TRUE),
                    max = max(difference, na.rm = TRUE),
-                   min = min(difference, na.rm = TRUE))
+                   min = min(difference, na.rm = TRUE),
+                   sd = sd(difference, na.rm = TRUE))
 
 # specify custom color palette to distingush first-year stages 
 # (i.e. chicks and juveniles) from adults
-cbPalette <- c("#D9D9D9", "#D9D9D9", "#D9D9D9", "#A6A6A6", "#A6A6A6")
+cbPalette <- c("#D9D9D9", "#D9D9D9", "#D9D9D9", "#D9D9D9", "#A6A6A6", "#A6A6A6")
 
 species_names <- 
   c('BC' = "Black Coucal",
@@ -95,9 +106,6 @@ sex_diff_survival_output2 <-
          species = factor(species, 
                           levels = c("BC", "WBC")))
 
-# from Safari's email on February 7th, 2020, HSR values are:
-# Black coucal = 0.4955[0.4577 - 0.5334]
-# White-browed coucal = 0.5198 [0.4751 - 0.5643]
 HSR_df <- 
   data.frame(species = c("BC", "WBC"),
              mean = c(0.4955, 0.5198),
@@ -160,23 +168,23 @@ theme_set(vital_rate_theme)
 
 surv_diff_plot <-
   ggplot(aes(y = difference, x = stage, fill = stage), 
-         data = sex_diff_survival_output2) +
+         data = sex_diff_survival_output) +
   geom_violin(draw_quantiles = c(0.025, 0.5, 0.975), color = "grey10",
               scale = "width", trim = TRUE, adjust = 1, size = 0.25) +
   # geom_jitter()+#draw_quantiles = c(0.025, 0.5, 0.975), 
   #             #scale = "width", trim = TRUE, adjust = 1, size = 0.25) +
   # coord_flip() +
   facet_grid(. ~ species, labeller = as_labeller(species_names)) +
-  theme(axis.title.x = element_text(size = 7, colour = "white"),
+  theme(axis.title.x = element_text(size = 7, colour = "black"),
         axis.text.x  = element_text(size = 8, angle = 45, hjust = 1, 
-                                    colour = "white"),
+                                    colour = "black"),
         axis.ticks.x = element_blank(),
         axis.title.y = element_text(size = 7, hjust = 0.5, vjust = -3),
         axis.text.y  = element_text(size = 6, colour = "black"),
         axis.ticks.y = element_line(size = 0.2),
         # panel.border = element_rect(colour = "red"),
         plot.margin = unit(c(0.2, 0.39, 0.405, 1.55), "cm"),
-        strip.text = element_text(size = 6, colour = "white")
+        strip.text = element_text(size = 6, colour = "black")
   ) +
   scale_fill_manual(values = cbPalette) +
   # scale_color_manual(values = cbPalette) +
@@ -188,8 +196,9 @@ surv_diff_plot <-
                                 expression(phantom("-")*"0.25"),
                                 expression(phantom("-")*"0.50"))) +
   xlab("Life stage") +
-  ylab("Sex bias in survival") +
-  scale_x_discrete(labels = c("HSR" = expression(italic("\u03C1")),
+  ylab("Sex bias") +
+  scale_x_discrete(labels = c("ISR" = expression(italic("ISR")),
+                              "HSR" = expression(italic("\u03C1")),
                               "Nestling" = expression(S["n"]),
                               "Groundling" = expression(S["g"]),
                               "Fledgling" = expression(S["f"]),
@@ -232,7 +241,8 @@ background <-
         plot.margin = unit(c(0.2, 1.35, 1.05, 0.65), "cm"),
         strip.text = element_text(size = 6, colour = "white")
   ) +
-  scale_x_discrete(labels = c("HSR" = expression(italic("\u03C1")),
+  scale_x_discrete(labels = c("ISR" = expression(italic("ISR")),
+                              "HSR" = expression(italic("\u03C1")),
                               "Nestling" = expression(S["n"]),
                               "Groundling" = expression(S["g"]),
                               "Fledgling" = expression(S["f"]),
@@ -288,6 +298,6 @@ grid::pushViewport( grid::viewport(
   layout = grid::grid.layout(1, 1, widths = unit(1, "npc")))) 
 print(background, newpage = FALSE)
 print(surv_diff_plot, newpage = FALSE)
-print(HSR_plot, newpage = FALSE)
+# print(HSR_plot, newpage = FALSE)
 grid::popViewport()
 # dev.off()

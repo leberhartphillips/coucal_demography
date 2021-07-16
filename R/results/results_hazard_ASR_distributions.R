@@ -6,7 +6,7 @@ source("R/project/project_plotting.R")
 function.sources = list.files(path = "R/functions", 
                               pattern = "*\\().R$", full.names = TRUE, 
                               ignore.case = TRUE)
-sapply(function.sources, source, .GlobalEnv)
+try (sapply(function.sources, source), silent = TRUE)
 
 # load capture histories
 data.sources = list.files(path = "data/cooked", 
@@ -26,13 +26,13 @@ WBC_hazard_rate_boot <-
 BC_hazard_rate_boot_tidy <- 
   hazard_boot_out_wrangle(species = "BC", niter = 1000, 
                           output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_one")
+                          rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc")
 
 # clean up the output from the bootstrap procedure and save as rds
 WBC_hazard_rate_boot_tidy <- 
   hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
                           output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_one")
+                          rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc")
 
 ASR_boot <- 
   bind_rows(BC_hazard_rate_boot_tidy$ASR_ests_boot,
@@ -75,7 +75,7 @@ Figure_2b <-
   # annotate("text", x = c(0.8), y = c(80),
   #          label = c("male"), size = 2,
   #          vjust = c(1), hjust = c(0.5)) +
-  geom_histogram(binwidth = 0.01, data = ASR_boot, aes(x = M_Adult), fill = "grey30") +
+  geom_histogram(binwidth = 0.02, data = ASR_boot, aes(x = M_Adult), fill = "grey30") +
   geom_errorbarh(data = ASR_boot_summary, aes(y = 180, x = lcl_ASR, xmin = lcl_ASR, xmax = ucl_ASR), 
                  color = "black", size = 0.3, linetype = "solid") +
   coord_flip() +
@@ -105,4 +105,5 @@ Figure_2b <-
   # xlab("Adult sex ratio\n(proportion male)") +
   scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
   scale_y_continuous(limits = c(0, 200), expand = c(0, 0), breaks=c(0, 50, 100, 150, 200))
+
 Figure_2b

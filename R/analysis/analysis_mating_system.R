@@ -6,7 +6,7 @@ source("R/project/project_plotting.R")
 function.sources = list.files(path = "R/functions", 
                               pattern = "*\\().R$", full.names = TRUE, 
                               ignore.case = TRUE)
-sapply(function.sources, source, .GlobalEnv)
+try (sapply(function.sources, source), silent = TRUE)
 
 mating_dat <- 
   # read raw data
@@ -146,7 +146,7 @@ sex_specific_mating_system <-
                    var_annual_no_mates = var(Nr_partners, na.rm = TRUE),
                    median_annual_no_mates = median(Nr_partners, na.rm = TRUE),
                    sd_annual_no_mates = sd(Nr_partners, na.rm = TRUE),
-                   n = n_distinct(ind_ID)) %>% 
+                   n = n_distinct(ind_ID), .groups = "drop") %>% 
   mutate(sample_size = paste("n = ", n, sep = ""),
          species_plot = ifelse(species == "WBC", 1.9, 1.1),
          species_lab = ifelse(species == "WBC", 1, 2))
@@ -154,18 +154,69 @@ sex_specific_mating_system <-
 # To obtain a female-based h index for each population the inverse of the mean 
 # mu is calculated (i.e., Eq. 5)
 BC_h <- 
-  1/as.numeric(sex_specific_mating_system[which(
+  # 1/
+  as.numeric(sex_specific_mating_system[which(
     sex_specific_mating_system$sex == "female" &
     sex_specific_mating_system$species == "BC"), "mean_annual_no_mates"])
 WBC_h <- 
-  1/as.numeric(sex_specific_mating_system[which(
+  # 1/
+  as.numeric(sex_specific_mating_system[which(
     sex_specific_mating_system$sex == "female" &
     sex_specific_mating_system$species == "WBC"), "mean_annual_no_mates"])
 
+BC_h_sd <- 
+  as.numeric(sex_specific_mating_system[which(
+    sex_specific_mating_system$sex == "female" &
+      sex_specific_mating_system$species == "BC"), "sd_annual_no_mates"])
+
+WBC_h_sd <- 
+  as.numeric(sex_specific_mating_system[which(
+    sex_specific_mating_system$sex == "female" &
+      sex_specific_mating_system$species == "WBC"), "sd_annual_no_mates"])
+
+# BC_h_upper_sd <- 
+#   # 1/
+#   (as.numeric(sex_specific_mating_system[which(
+#     sex_specific_mating_system$sex == "female" &
+#       sex_specific_mating_system$species == "BC"), "mean_annual_no_mates"]) -
+#       as.numeric(sex_specific_mating_system[which(
+#         sex_specific_mating_system$sex == "female" &
+#           sex_specific_mating_system$species == "BC"), "sd_annual_no_mates"]))
+# WBC_h_upper_sd <- 
+#   1/(as.numeric(sex_specific_mating_system[which(
+#     sex_specific_mating_system$sex == "female" &
+#       sex_specific_mating_system$species == "WBC"), "mean_annual_no_mates"]) -
+#       as.numeric(sex_specific_mating_system[which(
+#         sex_specific_mating_system$sex == "female" &
+#           sex_specific_mating_system$species == "WBC"), "sd_annual_no_mates"]))
+# 
+# BC_h_lower_sd <- 
+#   1/(as.numeric(sex_specific_mating_system[which(
+#     sex_specific_mating_system$sex == "female" &
+#       sex_specific_mating_system$species == "BC"), "mean_annual_no_mates"]) +
+#       as.numeric(sex_specific_mating_system[which(
+#         sex_specific_mating_system$sex == "female" &
+#           sex_specific_mating_system$species == "BC"), "sd_annual_no_mates"]))
+# WBC_h_lower_sd <- 
+#   1/(as.numeric(sex_specific_mating_system[which(
+#     sex_specific_mating_system$sex == "female" &
+#       sex_specific_mating_system$species == "WBC"), "mean_annual_no_mates"]) +
+#       as.numeric(sex_specific_mating_system[which(
+#         sex_specific_mating_system$sex == "female" &
+#           sex_specific_mating_system$species == "WBC"), "sd_annual_no_mates"]))
+
+coucal_mating_system <- 
+  data.frame(trait = c("mating_system"),
+             species = c("BC", "WBC"),
+             mean = c(BC_h, WBC_h),
+             sd = c(BC_h_sd, WBC_h_sd))
+             # upper_h_sd = c(BC_h_upper_sd, WBC_h_upper_sd),
+             # lower_h_sd = c(BC_h_lower_sd, WBC_h_lower_sd))
+
 # display the h values for each population (these are used in the mating function 
 # of the matrix model)
-BC_h
-WBC_h
+# BC_h
+# WBC_h
 
 # ```
 # 
@@ -224,9 +275,12 @@ mating_system_plot <-
            label = "polygamy",
            color = "black", size = 3, fontface = 'italic', hjust = 0.5)
 
-ggsave(mating_system_plot,
-       filename = "products/figures/mating_system.jpeg",
-       width = 6,
-       height = 4,
-       units = "in",
-       dpi = 600)
+# ggsave(mating_system_plot,
+#        filename = "products/figures/mating_system.jpeg",
+#        width = 6,
+#        height = 4,
+#        units = "in",
+#        dpi = 600)
+
+rm(mating_system_plot, mating_dat_plotting, mating_dat, 
+   BC_h, WBC_h, sex_specific_mating_system)
