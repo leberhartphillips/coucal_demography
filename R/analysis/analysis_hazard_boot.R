@@ -56,31 +56,31 @@ niter = 1000
 set.seed(14)
 
 k_dist_BC = c(pull(filter(coucal_clutch_size, species == "BC"), mean), 
-           pull(filter(coucal_clutch_size, species == "BC"), sd))
+              pull(filter(coucal_clutch_size, species == "BC"), sd))
 
 HSR_dist_BC = c(pull(filter(coucal_HSR, species == "BC"), mean), 
-             pull(filter(coucal_HSR, species == "BC"), sd))
+                pull(filter(coucal_HSR, species == "BC"), sd))
 
 h_dist_BC = c(pull(filter(coucal_mating_system, species == "BC"), mean), 
-           pull(filter(coucal_mating_system, species == "BC"), sd))
+              pull(filter(coucal_mating_system, species == "BC"), sd))
 
 egg_surv_dist_BC = c(pull(filter(coucal_egg_survival, species == "BC"), mean),
-                  pull(filter(coucal_egg_survival, species == "BC"), sd))
+                     pull(filter(coucal_egg_survival, species == "BC"), sd))
 
 ISR_dist_BC = c(pull(filter(coucal_ISR, species == "BC"), mean), 
-             pull(filter(coucal_ISR, species == "BC"), sd))
+                pull(filter(coucal_ISR, species == "BC"), sd))
 
 fledge_age_distF_BC = c(pull(filter(coucal_fledge_age, species == "BC" & sex == "F"), mean), 
-                     pull(filter(coucal_fledge_age, species == "BC" & sex == "F"), sd))
+                        pull(filter(coucal_fledge_age, species == "BC" & sex == "F"), sd))
 
 fledge_age_distM_BC = c(pull(filter(coucal_fledge_age, species == "BC" & sex == "M"), mean), 
-                     pull(filter(coucal_fledge_age, species == "BC" & sex == "M"), sd))
+                        pull(filter(coucal_fledge_age, species == "BC" & sex == "M"), sd))
 
 flight_age_distF_BC = c(pull(filter(coucal_flight_age, species == "BC" & sex == "F"), mean), 
-                     pull(filter(coucal_flight_age, species == "BC" & sex == "F"), sd))
+                        pull(filter(coucal_flight_age, species == "BC" & sex == "F"), sd))
 
 flight_age_distM_BC = c(pull(filter(coucal_flight_age, species == "BC" & sex == "M"), mean), 
-                     pull(filter(coucal_flight_age, species == "BC" & sex == "M"), sd))
+                        pull(filter(coucal_flight_age, species == "BC" & sex == "M"), sd))
 
 BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
   pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
@@ -109,31 +109,31 @@ niter = 1000
 set.seed(14)
 
 k_dist_WBC = c(pull(filter(coucal_clutch_size, species == "WBC"), mean), 
-              pull(filter(coucal_clutch_size, species == "WBC"), sd))
+               pull(filter(coucal_clutch_size, species == "WBC"), sd))
 
 HSR_dist_WBC = c(pull(filter(coucal_HSR, species == "WBC"), mean), 
-                pull(filter(coucal_HSR, species == "WBC"), sd))
+                 pull(filter(coucal_HSR, species == "WBC"), sd))
 
 h_dist_WBC = c(pull(filter(coucal_mating_system, species == "WBC"), mean), 
-              pull(filter(coucal_mating_system, species == "WBC"), sd))
+               pull(filter(coucal_mating_system, species == "WBC"), sd))
 
 egg_surv_dist_WBC = c(pull(filter(coucal_egg_survival, species == "WBC"), mean),
-                     pull(filter(coucal_egg_survival, species == "WBC"), sd))
+                      pull(filter(coucal_egg_survival, species == "WBC"), sd))
 
 ISR_dist_WBC = c(pull(filter(coucal_ISR, species == "WBC"), mean), 
-                pull(filter(coucal_ISR, species == "WBC"), sd))
+                 pull(filter(coucal_ISR, species == "WBC"), sd))
 
 fledge_age_distF_WBC = c(pull(filter(coucal_fledge_age, species == "WBC" & sex == "F"), mean), 
-                        pull(filter(coucal_fledge_age, species == "WBC" & sex == "F"), sd))
+                         pull(filter(coucal_fledge_age, species == "WBC" & sex == "F"), sd))
 
 fledge_age_distM_WBC = c(pull(filter(coucal_fledge_age, species == "WBC" & sex == "M"), mean), 
-                        pull(filter(coucal_fledge_age, species == "WBC" & sex == "M"), sd))
+                         pull(filter(coucal_fledge_age, species == "WBC" & sex == "M"), sd))
 
 flight_age_distF_WBC = c(pull(filter(coucal_flight_age, species == "WBC" & sex == "F"), mean), 
-                        pull(filter(coucal_flight_age, species == "WBC" & sex == "F"), sd))
+                         pull(filter(coucal_flight_age, species == "WBC" & sex == "F"), sd))
 
 flight_age_distM_WBC = c(pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), mean), 
-                        pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), sd))
+                         pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), sd))
 
 WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
   pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,

@@ -20,12 +20,17 @@ BC_JSR_out <-
 
 # load output
 WBC_JSR_out <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_hazard_JSR_bootstrap_result.rds")
+  readRDS("output/bootstraps/hazard/cooked/WBC_hazard_JSR_bootstrap_result_stoch.rds")
 
 JSR_boot <- 
   bind_rows(BC_JSR_out,
             WBC_JSR_out) %>%
   mutate(species = factor(species, levels = c("BC", "WBC")))
+
+# JSR_boot <- 
+#   bind_rows(BC_JSR_run_5050_HSR,
+#             WBC_JSR_run_5050_HSR) %>%
+#   mutate(species = factor(species, levels = c("BC", "WBC")))
 
 CI <- 0.95
 
@@ -36,6 +41,16 @@ end_JSR_boot <-
   arrange(species, iteration, desc(age)) %>% 
   dplyr::group_by(species, iteration) %>%
   slice(1)
+
+JSR_boot_age_summary <- 
+  JSR_boot %>% 
+  dplyr::group_by(species, age) %>%
+  dplyr::summarise(ucl_JSR = stats::quantile(JSR, (1 - CI)/2, na.rm = TRUE),
+                   lcl_JSR = stats::quantile(JSR, 1 - (1 - CI)/2, na.rm = TRUE),
+                   avg_JSR = mean(JSR, na.rm = TRUE),
+                   med_JSR = median(JSR, na.rm = TRUE),
+                   max_JSR = max(JSR, na.rm = TRUE),
+                   min_JSR = min(JSR, na.rm = TRUE))
 
 JSR_boot_summary <- 
   end_JSR_boot %>% 
@@ -57,15 +72,23 @@ flight_dat <-
              end_groundling_upper = c(38, 35))
 
 #### plot JSR dynamics and distribution ----
-JSR_dynamics_plot <- 
-  ggplot(data = bind_rows(BC_JSR_out,
-                        WBC_JSR_out)) +
+# JSR_dynamics_plot <- 
+  ggplot(data = JSR_boot) +
   geom_line(aes(y = JSR, x = as.numeric(age), group = iteration),
             alpha = 0.05, color = "black") +
+  # geom_line(data = JSR_boot_age_summary,
+  #           aes(y = med_JSR, x = as.numeric(age), color = "white"),
+  #           size = 2) +
   annotate("rect", ymin=0, ymax=0.5, xmin=0, xmax = 70, alpha=0.6,
            fill= brewer.pal(8, "Dark2")[c(2)]) +
   annotate("rect", ymin=0.5, ymax=1, xmin=0, xmax = 70, alpha=0.6,
            fill= brewer.pal(8, "Dark2")[c(1)]) +
+  geom_errorbar(data = JSR_boot_age_summary,
+                aes(ymin = lcl_JSR, ymax = ucl_JSR, y = avg_JSR,
+                    x = age), 
+                color = "white", size = 0.3, linetype = "solid") +
+  geom_point(data = JSR_boot_age_summary,
+             aes(y = med_JSR, x = age), size = 0.3, color = "white") +
   annotate("text", y = c(0.3), x = c(10),
            label = c("\u2640"), size = 4, colour = "grey10",
            family="Menlo", vjust = c(0.5), hjust = c(0.5)) +
@@ -144,4 +167,4 @@ ggsave(JSR_dynamics_plot,
   # xlab("Adult sex ratio\n(proportion male)") +
   scale_x_continuous(limits = c(0.25, 0.75), expand = c(0, 0)) +
   scale_y_continuous(limits = c(0, 200), expand = c(0, 0), breaks=c(0, 50, 100, 150))
-# Figure_2b
+# Figure_2bg
