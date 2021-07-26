@@ -14,19 +14,19 @@ data.sources = list.files(path = "data/cooked",
                           ignore.case = TRUE)
 sapply(data.sources, load, .GlobalEnv)
 
-# load output
-BC_hazard_rate_boot <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_one.rds")
-
-# load output
-WBC_hazard_rate_boot <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
+# # load output
+# BC_hazard_rate_boot <- 
+#   readRDS("output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_one.rds")
+# 
+# # load output
+# WBC_hazard_rate_boot <- 
+#   readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
 
 # clean up the output from the bootstrap procedure and save as rds
 BC_hazard_rate_boot_tidy <- 
   hazard_boot_out_wrangle(species = "BC", niter = 1000, 
                           output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc")
+                          rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_5050_ISR")
 
 # clean up the output from the bootstrap procedure and save as rds
 WBC_hazard_rate_boot_tidy <- 
