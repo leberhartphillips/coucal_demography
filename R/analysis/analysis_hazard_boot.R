@@ -27,12 +27,12 @@ source("R/analysis/analysis_age_first_flight.R")
 # consolidate
 parameter_distributions <- 
   bind_rows(coucal_egg_survival,
-          coucal_clutch_size,
-          coucal_HSR,
-          coucal_ISR,
-          coucal_mating_system,
-          coucal_fledge_age,
-          coucal_flight_age) %>% 
+            coucal_clutch_size,
+            coucal_HSR,
+            coucal_ISR,
+            coucal_mating_system,
+            coucal_fledge_age,
+            coucal_flight_age) %>% 
   dplyr::select(trait, species, sex, mean, sd)
 
 # filter to species of interest
@@ -84,25 +84,48 @@ flight_age_distM_BC = c(pull(filter(coucal_flight_age, species == "BC" & sex == 
 
 BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
   pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
-    offspring = BC_all_dat,
-    adult_surival_boot_out = WBC_adult_surival_boot_out,
-    immigrant_pop_size = 100,
-    bootstrap_name = "BC_boot_w_WBC_ad_surv_stoc",
-    species = "BC",
-    iter_add = 1,
-    prefix_number = "boot_w_WBC_ad_surv_stoc",
-    max_time = 70,
-    niter = niter,
-    alpha_value = 1.4,
-    k_dist = k_dist_BC,
-    HSR_dist = HSR_dist_BC,
-    h_dist = h_dist_BC,
-    egg_surv_dist = egg_surv_dist_BC,
-    ISR_dist = ISR_dist_BC,
-    fledge_age_distF = fledge_age_distF_BC,
-    fledge_age_distM = fledge_age_distM_BC,
-    flight_age_distF = flight_age_distF_BC,
-    flight_age_distM = flight_age_distM_BC)
+           offspring = BC_all_dat,
+           adult_surival_boot_out = WBC_adult_surival_boot_out,
+           immigrant_pop_size = 100,
+           bootstrap_name = "BC_boot_w_WBC_ad_surv_stoc",
+           species = "BC",
+           iter_add = 1,
+           prefix_number = "boot_w_WBC_ad_surv_stoc",
+           max_time = 70,
+           niter = niter,
+           alpha_value = 1.4,
+           k_dist = k_dist_BC,
+           HSR_dist = HSR_dist_BC,
+           h_dist = h_dist_BC,
+           egg_surv_dist = egg_surv_dist_BC,
+           ISR_dist = ISR_dist_BC,
+           fledge_age_distF = fledge_age_distF_BC,
+           fledge_age_distM = fledge_age_distM_BC,
+           flight_age_distF = flight_age_distF_BC,
+           flight_age_distM = flight_age_distM_BC)
+
+BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_5050_ISR <-
+  pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
+           offspring = BC_all_dat,
+           adult_surival_boot_out = WBC_adult_surival_boot_out,
+           immigrant_pop_size = 100,
+           bootstrap_name = "BC_boot_w_WBC_ad_surv_stoc_50_ISR",
+           species = "BC",
+           iter_add = 1,
+           prefix_number = "boot_w_WBC_ad_surv_stoc_50_ISR",
+           max_time = 70,
+           niter = niter,
+           alpha_value = 1.4,
+           k_dist = k_dist_BC,
+           HSR_dist = HSR_dist_BC,
+           h_dist = h_dist_BC,
+           egg_surv_dist = egg_surv_dist_BC,
+           ISR_dist = c(0.5, 0),
+           fledge_age_distF = fledge_age_distF_BC,
+           fledge_age_distM = fledge_age_distM_BC,
+           flight_age_distF = flight_age_distF_BC,
+           flight_age_distM = flight_age_distM_BC)
+
 
 #### White-browed Coucals ----
 niter = 1000
@@ -143,7 +166,7 @@ WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
            bootstrap_name = "WBC_boot_w_WBC_ad_surv_stoc",
            species = "WBC",
            iter_add = 1,
-           prefix_number = "boot_w_WBC_ad_surv_stoc",
+           prefix_number = "boot_w_WBC_ad_surv_stoc", 
            max_time = 70,
            niter = niter,
            alpha_value = 1.4,
@@ -161,6 +184,9 @@ WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
 # save model output
 saveRDS(object = BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc, 
         file = "output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds")
+
+saveRDS(object = BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_5050_ISR, 
+        file = "output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_5050_ISR.rds")
 
 saveRDS(object = WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc, 
         file = "output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds")

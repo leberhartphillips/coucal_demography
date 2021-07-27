@@ -60,6 +60,10 @@ July 26, 2021
 got the JSR stochastic model running. Might be best to assume that HSR is 50/50 (see results_JSR_dynamics.R, XX_JSR_run_5050_HSR)
 Need to set up a sensitivity analysis of the JSR model
 
+-------------------------
+July 27, 2021
+Stuff for sensitivity analysis function:
+vital_rate_summary - 
 
 - add (mean, sd) of the above traits to the hazard bootstrap
 - re-run completely stochastic model

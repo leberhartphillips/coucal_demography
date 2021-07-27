@@ -29,10 +29,12 @@
 !R/analysis/analysis_hazard_boot.R
 
 # results of bootstrapping
-!results/results_hazard_ASR_distributions.R
-!results/results_sex_diff_hazard.R
-!results/results_hazard_rate.R
+!R/results/results_hazard_ASR_distributions.R
+!R/results/results_sex_diff_hazard.R
+!R/results/results_hazard_rate.R
 
+# playground
+!R/junkyard/sensitivity_JSR_workflow.R
 
 !data/mol_sex.rds
 !data/chicks_2006_2020.rds
