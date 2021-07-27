@@ -63,7 +63,16 @@ Need to set up a sensitivity analysis of the JSR model
 -------------------------
 July 27, 2021
 Stuff for sensitivity analysis function:
-vital_rate_summary - 
+iteraate through
+ - daily age- and sex-specific survival rates (DONE)
+ - h
+ - k 
+ - ISR
+ - egg_S
+ - imm_N
+ - HSR
+
+
 
 - add (mean, sd) of the above traits to the hazard bootstrap
 - re-run completely stochastic model
