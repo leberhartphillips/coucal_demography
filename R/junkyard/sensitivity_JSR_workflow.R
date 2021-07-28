@@ -99,9 +99,9 @@ ISR_rate = pull(filter(parameter_distributions,
 k_rate = pull(filter(parameter_distributions, 
                         species == species_name & trait == "clutch_size"), 
                  mean)
-h_rate = pull(filter(parameter_distributions, 
+h_rate = (1 / pull(filter(parameter_distributions, 
                         species == species_name & trait == "mating_system"), 
-                 mean)
+                 mean))
 HSR_rate = pull(filter(parameter_distributions, 
                       species == species_name & trait == "hatching_sex_ratio"), 
                mean)
@@ -797,6 +797,11 @@ for (g in 1:1){
     imm_N_base / JSR_base * JSR_pert_results[which(JSR_pert_results$parameter == "imm_N"), 2]
   
 }
+
+# save model output
+saveRDS(object = JSR_pert_results, 
+        file = "output/sensitivity_analysis/BC_JSR_sens_5050_HSR_stoch.rds")
+
 
 flight_dat <- 
   data.frame(species = c("BC","WBC"),

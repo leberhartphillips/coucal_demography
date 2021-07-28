@@ -16,6 +16,8 @@
 !R/analysis/analysis_mating_system.R
 !R/analysis/analysis_fledging_age.R
 !R/analysis/analysis_flight_age.R
+!R/analysis/analysis_sensitivity_analysis_JSR.R
+!R/analysis/analysis_JSR_bootstrap.R
 
 # functions
 !R/functions/function_run_bootstrap_juv_hazd_ad_surv_ASR().R
@@ -24,6 +26,10 @@
 !R/functions/function_bootstrap_juv_hazd_ad_surv_ASR().R
 !R/functions/function_bootstrap_hazard_ASR().R
 !R/functions/function_sex_diff_hazard().R
+!R/functions/function_make_mprime_and_treat_summary_JSR().R
+!R/functions/function_LTRE_analysis_JSR().R
+!R/functions/function_JSR_bootstrap_deter().R
+!R/functions/function_sensitivity_analysis_JSR().R
 
 # species-specific bootstrapped analysis
 !R/analysis/analysis_hazard_boot.R
