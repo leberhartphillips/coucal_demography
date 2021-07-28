@@ -36,10 +36,10 @@ parameter_distributions <-
 
 # load output of JSR stochastic bootstrap
 BC_JSR_out <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_hazard_JSR_bootstrap_result_stoch.rds")
+  readRDS("output/bootstraps/hazard/cooked/BC_hazard_JSR_bootstrap_result_stoch_5050_HSR.rds")
 
 WBC_JSR_out <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_hazard_JSR_bootstrap_result_stoch.rds")
+  readRDS("output/bootstraps/hazard/cooked/WBC_hazard_JSR_bootstrap_result_stoch_5050_HSR.rds")
 
 CI <- 0.95
 
@@ -108,7 +108,19 @@ HSR_rate = pull(filter(parameter_distributions,
 egg_S_rate = pull(filter(parameter_distributions, 
                          species == species_name & trait == "egg_survival"), 
                   mean)
-JSR_base = 0.5
+JSR_base = 
+  bind_rows(BC_JSR_out,
+            WBC_JSR_out) %>%
+  mutate(species = factor(species, levels = c("BC", "WBC"))) %>% 
+  dplyr::group_by(species, age) %>%
+  dplyr::summarise(ucl_JSR = stats::quantile(JSR, (1 - CI)/2, na.rm = TRUE),
+                   lcl_JSR = stats::quantile(JSR, 1 - (1 - CI)/2, na.rm = TRUE),
+                   avg_JSR = mean(JSR, na.rm = TRUE),
+                   med_JSR = median(JSR, na.rm = TRUE),
+                   max_JSR = max(JSR, na.rm = TRUE),
+                   min_JSR = min(JSR, na.rm = TRUE)) %>% 
+  filter(age == (length(unique(survival_rates$age)) - 2) & species == species_name) %>% 
+  pull(avg_JSR) 
 #### -----
 
 # dataframe to store the perturbation results
@@ -148,8 +160,8 @@ ISR_pert_JSR <- matrix(numeric(length(vr_nums)),
 egg_S_pert_JSR <- matrix(numeric(length(vr_nums)),
                          ncol = 1, dimnames = list(vr_nums, "egg_S"))
 
-imm_N_pert_JSR <- matrix(numeric(length(vr_nums)),
-                         ncol = 1, dimnames = list(vr_nums, "imm_N"))
+imm_N_pert_JSR <- matrix(numeric(length(imm_N_nums)),
+                         ncol = 1, dimnames = list(imm_N_nums, "imm_N"))
 
 vr <- 
   filter(survival_rates, species == species_name) %>% 
@@ -167,14 +179,10 @@ for (g in 1:n){ # pick a column (i.e., a sex-specific age)
     matrix(, nrow = n/2, ncol = 1)
   
   N_F_immigrants <- 
-    imm_N_base * (1 - pull(filter(parameter_distributions, 
-                                  species == "BC" & trait == "immigration_sex_ratio"), 
-                           mean))
+    imm_N_base * (1 - ISR_rate)
   
   N_M_immigrants <- 
-    imm_N_base * pull(filter(parameter_distributions, 
-                             species == "BC" & trait == "immigration_sex_ratio"), 
-                      mean)
+    imm_N_base * ISR_rate
   
   # Female freq-dep fecundity of Female chicks
   F_F_eggs <- 
@@ -246,6 +254,548 @@ for (g in 1:n){ # pick a column (i.e., a sex-specific age)
   # re-scale sensitivity into elasticity
   JSR_pert_results[g, 3] <- vr[g, "fit"] / JSR_base * JSR_pert_results[g, 2]
 
+}
+
+##### perturbation of egg survival rate ####
+for (g in 1:1){ 
+  
+  for (i in 1:length(vr_nums)){ # pick a perturbation level
+    
+    vr2 <- vr # reset the vital rates to the original
+    
+    F_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    M_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    N_F_immigrants <- 
+      imm_N_base * (1 - ISR_rate)
+    
+    N_M_immigrants <- 
+      imm_N_base * ISR_rate
+    
+    # Female freq-dep fecundity of Female chicks
+    F_F_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - HSR_rate))
+    
+    # Female freq-dep fecundity of Male chicks
+    F_M_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * HSR_rate)
+    
+    # Male freq-dep fecundity of Female chicks
+    M_F_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - HSR_rate))
+    
+    # Male freq-dep fecundity of Male chicks
+    M_M_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * HSR_rate)
+    
+    N_F_eggs <- F_F_eggs * N_F_immigrants + M_F_eggs * N_M_immigrants
+    N_M_eggs <- F_M_eggs * N_F_immigrants + M_M_eggs * N_M_immigrants
+    
+    # specify the egg survival with the new perturbation level
+    F_juv_pop_storage_boot[1, 1] <- N_F_eggs * vr_nums[i]
+    M_juv_pop_storage_boot[1, 1] <- N_M_eggs * vr_nums[i]
+    
+    # vr2[g, "fit"] <- vr_nums[i] # specify the vital rate with the new perturbation level
+    
+    for (j in 2:(n/2)) { # push the population through the survival process
+      
+      F_juv_pop_storage_boot[j, 1] <- 
+        F_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Female"), ][["fit"]][j - 1]
+      M_juv_pop_storage_boot[j, 1] <- 
+        M_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Male"), ][["fit"]][j - 1]
+    }
+    
+    F_juv_pop_storage_boot_clean <-
+      data.frame(F_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = F_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "F", 
+             species = species_name)
+    
+    M_juv_pop_storage_boot_clean <-
+      data.frame(M_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = M_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "M", 
+             species = species_name)
+    
+    # calc JSR as the proportion of the juvenile population that is male
+    out <- 
+      left_join(F_juv_pop_storage_boot_clean, 
+                M_juv_pop_storage_boot_clean, 
+                by = c("species", "age"))  %>% 
+      mutate(JSR = pop_size.y / (pop_size.y + pop_size.x))
+    
+    # extract and store the final JSR value
+    egg_S_pert_JSR[i, g] <- out[(n/2), "JSR"]
+  }
+  
+  # get the spline function of JSR
+  spl_JSR <- 
+    smooth.spline(egg_S_pert_JSR[which(!is.na(egg_S_pert_JSR[, g])), g] ~ 
+                    names(egg_S_pert_JSR[which(!is.na(egg_S_pert_JSR[, g])), g]))
+  
+  # estimate the slope of the tangent of the spline at the vital rate
+  JSR_pert_results[which(JSR_pert_results$parameter == "egg_S"), 2] <- 
+    predict(spl_JSR, x = egg_S_rate, deriv = 1)$y
+  
+  # re-scale sensitivity into elasticity
+  JSR_pert_results[which(JSR_pert_results$parameter == "egg_S"), 3] <- 
+    egg_S_rate / JSR_base * JSR_pert_results[which(JSR_pert_results$parameter == "egg_S"), 2]
+  
+}
+
+##### perturbation of hatching sex ratio ####
+for (g in 1:1){ 
+  
+  for (i in 1:length(vr_nums)){ # pick a perturbation level
+    
+    vr2 <- vr # reset the vital rates to the original
+    
+    F_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    M_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    N_F_immigrants <- 
+      imm_N_base * (1 - ISR_rate)
+    
+    N_M_immigrants <- 
+      imm_N_base * ISR_rate
+    
+    # Female freq-dep fecundity of Female chicks
+    F_F_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - vr_nums[i]))
+    
+    # Female freq-dep fecundity of Male chicks
+    F_M_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * vr_nums[i])
+    
+    # Male freq-dep fecundity of Female chicks
+    M_F_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - vr_nums[i]))
+    
+    # Male freq-dep fecundity of Male chicks
+    M_M_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * vr_nums[i])
+    
+    N_F_eggs <- F_F_eggs * N_F_immigrants + M_F_eggs * N_M_immigrants
+    N_M_eggs <- F_M_eggs * N_F_immigrants + M_M_eggs * N_M_immigrants
+    
+    # specify the egg survival with the new perturbation level
+    F_juv_pop_storage_boot[1, 1] <- N_F_eggs * egg_S_rate
+    M_juv_pop_storage_boot[1, 1] <- N_M_eggs * egg_S_rate
+    
+    for (j in 2:(n/2)) { # push the population through the survival process
+      
+      F_juv_pop_storage_boot[j, 1] <- 
+        F_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Female"), ][["fit"]][j - 1]
+      M_juv_pop_storage_boot[j, 1] <- 
+        M_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Male"), ][["fit"]][j - 1]
+    }
+    
+    F_juv_pop_storage_boot_clean <-
+      data.frame(F_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = F_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "F", 
+             species = species_name)
+    
+    M_juv_pop_storage_boot_clean <-
+      data.frame(M_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = M_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "M", 
+             species = species_name)
+    
+    # calc JSR as the proportion of the juvenile population that is male
+    out <- 
+      left_join(F_juv_pop_storage_boot_clean, 
+                M_juv_pop_storage_boot_clean, 
+                by = c("species", "age"))  %>% 
+      mutate(JSR = pop_size.y / (pop_size.y + pop_size.x))
+    
+    # extract and store the final JSR value
+    HSR_pert_JSR[i, g] <- out[(n/2), "JSR"]
+  }
+  
+  # get the spline function of JSR
+  spl_JSR <- 
+    smooth.spline(HSR_pert_JSR[which(!is.na(HSR_pert_JSR[, g])), g] ~ 
+                    names(HSR_pert_JSR[which(!is.na(HSR_pert_JSR[, g])), g]))
+  
+  # estimate the slope of the tangent of the spline at the vital rate
+  JSR_pert_results[which(JSR_pert_results$parameter == "HSR"), 2] <- 
+    predict(spl_JSR, x = HSR_rate, deriv = 1)$y
+  
+  # re-scale sensitivity into elasticity
+  JSR_pert_results[which(JSR_pert_results$parameter == "HSR"), 3] <- 
+    HSR_rate / JSR_base * JSR_pert_results[which(JSR_pert_results$parameter == "HSR"), 2]
+  
+}
+
+##### perturbation of mating system ####
+for (g in 1:1){ 
+  
+  for (i in 1:length(vr_nums)){ # pick a perturbation level
+    
+    vr2 <- vr # reset the vital rates to the original
+    
+    F_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    M_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    N_F_immigrants <- 
+      imm_N_base * (1 - ISR_rate)
+    
+    N_M_immigrants <- 
+      imm_N_base * ISR_rate
+    
+    # Female freq-dep fecundity of Female chicks
+    F_F_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / vr_nums[i])) * (1 - HSR_rate))
+    
+    # Female freq-dep fecundity of Male chicks
+    F_M_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / vr_nums[i])) * HSR_rate)
+    
+    # Male freq-dep fecundity of Female chicks
+    M_F_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / vr_nums[i])) * (1 - HSR_rate))
+    
+    # Male freq-dep fecundity of Male chicks
+    M_M_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / vr_nums[i])) * HSR_rate)
+    
+    N_F_eggs <- F_F_eggs * N_F_immigrants + M_F_eggs * N_M_immigrants
+    N_M_eggs <- F_M_eggs * N_F_immigrants + M_M_eggs * N_M_immigrants
+    
+    # specify the egg survival with the new perturbation level
+    F_juv_pop_storage_boot[1, 1] <- N_F_eggs * egg_S_rate
+    M_juv_pop_storage_boot[1, 1] <- N_M_eggs * egg_S_rate
+    
+    for (j in 2:(n/2)) { # push the population through the survival process
+      
+      F_juv_pop_storage_boot[j, 1] <- 
+        F_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Female"), ][["fit"]][j - 1]
+      M_juv_pop_storage_boot[j, 1] <- 
+        M_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Male"), ][["fit"]][j - 1]
+    }
+    
+    F_juv_pop_storage_boot_clean <-
+      data.frame(F_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = F_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "F", 
+             species = species_name)
+    
+    M_juv_pop_storage_boot_clean <-
+      data.frame(M_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = M_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "M", 
+             species = species_name)
+    
+    # calc JSR as the proportion of the juvenile population that is male
+    out <- 
+      left_join(F_juv_pop_storage_boot_clean, 
+                M_juv_pop_storage_boot_clean, 
+                by = c("species", "age"))  %>% 
+      mutate(JSR = pop_size.y / (pop_size.y + pop_size.x))
+    
+    # extract and store the final JSR value
+    h_pert_JSR[i, g] <- out[(n/2), "JSR"]
+  }
+  
+  # get the spline function of JSR
+  spl_JSR <- 
+    smooth.spline(h_pert_JSR[which(!is.na(h_pert_JSR[, g])), g] ~ 
+                    names(h_pert_JSR[which(!is.na(h_pert_JSR[, g])), g]))
+  
+  # estimate the slope of the tangent of the spline at the vital rate
+  JSR_pert_results[which(JSR_pert_results$parameter == "h"), 2] <- 
+    predict(spl_JSR, x = h_rate, deriv = 1)$y
+  
+  # re-scale sensitivity into elasticity
+  JSR_pert_results[which(JSR_pert_results$parameter == "h"), 3] <- 
+    h_rate / JSR_base * JSR_pert_results[which(JSR_pert_results$parameter == "h"), 2]
+  
+}
+
+##### perturbation of clutch size ####
+for (g in 1:1){ 
+  
+  for (i in 1:length(vr_nums)){ # pick a perturbation level
+    
+    vr2 <- vr # reset the vital rates to the original
+    
+    F_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    M_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    N_F_immigrants <- 
+      imm_N_base * (1 - ISR_rate)
+    
+    N_M_immigrants <- 
+      imm_N_base * ISR_rate
+    
+    # Female freq-dep fecundity of Female chicks
+    F_F_eggs <- 
+      ((vr_nums[i] * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - HSR_rate))
+    
+    # Female freq-dep fecundity of Male chicks
+    F_M_eggs <- 
+      ((vr_nums[i] * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * HSR_rate)
+    
+    # Male freq-dep fecundity of Female chicks
+    M_F_eggs <- 
+      ((vr_nums[i] * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - HSR_rate))
+    
+    # Male freq-dep fecundity of Male chicks
+    M_M_eggs <- 
+      ((vr_nums[i] * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * HSR_rate)
+    
+    N_F_eggs <- F_F_eggs * N_F_immigrants + M_F_eggs * N_M_immigrants
+    N_M_eggs <- F_M_eggs * N_F_immigrants + M_M_eggs * N_M_immigrants
+    
+    # specify the egg survival with the new perturbation level
+    F_juv_pop_storage_boot[1, 1] <- N_F_eggs * egg_S_rate
+    M_juv_pop_storage_boot[1, 1] <- N_M_eggs * egg_S_rate
+    
+    for (j in 2:(n/2)) { # push the population through the survival process
+      
+      F_juv_pop_storage_boot[j, 1] <- 
+        F_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Female"), ][["fit"]][j - 1]
+      M_juv_pop_storage_boot[j, 1] <- 
+        M_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Male"), ][["fit"]][j - 1]
+    }
+    
+    F_juv_pop_storage_boot_clean <-
+      data.frame(F_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = F_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "F", 
+             species = species_name)
+    
+    M_juv_pop_storage_boot_clean <-
+      data.frame(M_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = M_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "M", 
+             species = species_name)
+    
+    # calc JSR as the proportion of the juvenile population that is male
+    out <- 
+      left_join(F_juv_pop_storage_boot_clean, 
+                M_juv_pop_storage_boot_clean, 
+                by = c("species", "age"))  %>% 
+      mutate(JSR = pop_size.y / (pop_size.y + pop_size.x))
+    
+    # extract and store the final JSR value
+    k_pert_JSR[i, g] <- out[(n/2), "JSR"]
+  }
+  
+  # get the spline function of JSR
+  spl_JSR <- 
+    smooth.spline(k_pert_JSR[which(!is.na(k_pert_JSR[, g])), g] ~ 
+                    names(k_pert_JSR[which(!is.na(k_pert_JSR[, g])), g]))
+  
+  # estimate the slope of the tangent of the spline at the vital rate
+  JSR_pert_results[which(JSR_pert_results$parameter == "k"), 2] <- 
+    predict(spl_JSR, x = k_rate, deriv = 1)$y
+  
+  # re-scale sensitivity into elasticity
+  JSR_pert_results[which(JSR_pert_results$parameter == "k"), 3] <- 
+    k_rate / JSR_base * JSR_pert_results[which(JSR_pert_results$parameter == "k"), 2]
+  
+}
+
+##### perturbation of immigration sex ratio ####
+for (g in 1:1){ 
+  
+  for (i in 1:length(vr_nums)){ # pick a perturbation level
+    
+    vr2 <- vr # reset the vital rates to the original
+    
+    F_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    M_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    N_F_immigrants <- 
+      imm_N_base * (1 - vr_nums[i])
+    
+    N_M_immigrants <- 
+      imm_N_base * vr_nums[i]
+    
+    # Female freq-dep fecundity of Female chicks
+    F_F_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - HSR_rate))
+    
+    # Female freq-dep fecundity of Male chicks
+    F_M_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * HSR_rate)
+    
+    # Male freq-dep fecundity of Female chicks
+    M_F_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - HSR_rate))
+    
+    # Male freq-dep fecundity of Male chicks
+    M_M_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * HSR_rate)
+    
+    N_F_eggs <- F_F_eggs * N_F_immigrants + M_F_eggs * N_M_immigrants
+    N_M_eggs <- F_M_eggs * N_F_immigrants + M_M_eggs * N_M_immigrants
+    
+    # specify the egg survival with the new perturbation level
+    F_juv_pop_storage_boot[1, 1] <- N_F_eggs * egg_S_rate
+    M_juv_pop_storage_boot[1, 1] <- N_M_eggs * egg_S_rate
+    
+    for (j in 2:(n/2)) { # push the population through the survival process
+      
+      F_juv_pop_storage_boot[j, 1] <- 
+        F_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Female"), ][["fit"]][j - 1]
+      M_juv_pop_storage_boot[j, 1] <- 
+        M_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Male"), ][["fit"]][j - 1]
+    }
+    
+    F_juv_pop_storage_boot_clean <-
+      data.frame(F_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = F_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "F", 
+             species = species_name)
+    
+    M_juv_pop_storage_boot_clean <-
+      data.frame(M_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = M_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "M", 
+             species = species_name)
+    
+    # calc JSR as the proportion of the juvenile population that is male
+    out <- 
+      left_join(F_juv_pop_storage_boot_clean, 
+                M_juv_pop_storage_boot_clean, 
+                by = c("species", "age"))  %>% 
+      mutate(JSR = pop_size.y / (pop_size.y + pop_size.x))
+    
+    # extract and store the final JSR value
+    ISR_pert_JSR[i, g] <- out[(n/2), "JSR"]
+  }
+  
+  # get the spline function of JSR
+  spl_JSR <- 
+    smooth.spline(ISR_pert_JSR[which(!is.na(ISR_pert_JSR[, g])), g] ~ 
+                    names(ISR_pert_JSR[which(!is.na(ISR_pert_JSR[, g])), g]))
+  
+  # estimate the slope of the tangent of the spline at the vital rate
+  JSR_pert_results[which(JSR_pert_results$parameter == "ISR"), 2] <- 
+    predict(spl_JSR, x = ISR_rate, deriv = 1)$y
+  
+  # re-scale sensitivity into elasticity
+  JSR_pert_results[which(JSR_pert_results$parameter == "ISR"), 3] <- 
+    ISR_rate / JSR_base * JSR_pert_results[which(JSR_pert_results$parameter == "ISR"), 2]
+  
+}
+
+##### perturbation of immigration population size ####
+for (g in 1:1){ 
+  
+  for (i in 1:length(vr_nums)){ # pick a perturbation level
+    
+    vr2 <- vr # reset the vital rates to the original
+    
+    F_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    M_juv_pop_storage_boot <- 
+      matrix(, nrow = n/2, ncol = 1)
+    
+    N_F_immigrants <- 
+      vr_nums[i] * (1 - ISR_rate)
+    
+    N_M_immigrants <- 
+      vr_nums[i] * ISR_rate
+    
+    # Female freq-dep fecundity of Female chicks
+    F_F_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - HSR_rate))
+    
+    # Female freq-dep fecundity of Male chicks
+    F_M_eggs <- 
+      ((k_rate * N_M_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * HSR_rate)
+    
+    # Male freq-dep fecundity of Female chicks
+    M_F_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * (1 - HSR_rate))
+    
+    # Male freq-dep fecundity of Male chicks
+    M_M_eggs <- 
+      ((k_rate * N_F_immigrants) / (N_M_immigrants + (N_F_immigrants / h_rate)) * HSR_rate)
+    
+    N_F_eggs <- F_F_eggs * N_F_immigrants + M_F_eggs * N_M_immigrants
+    N_M_eggs <- F_M_eggs * N_F_immigrants + M_M_eggs * N_M_immigrants
+    
+    # specify the egg survival with the new perturbation level
+    F_juv_pop_storage_boot[1, 1] <- N_F_eggs * egg_S_rate
+    M_juv_pop_storage_boot[1, 1] <- N_M_eggs * egg_S_rate
+    
+    for (j in 2:(n/2)) { # push the population through the survival process
+      
+      F_juv_pop_storage_boot[j, 1] <- 
+        F_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Female"), ][["fit"]][j - 1]
+      M_juv_pop_storage_boot[j, 1] <- 
+        M_juv_pop_storage_boot[j - 1, 1] * vr2[which(vr2$sex == "Male"), ][["fit"]][j - 1]
+    }
+    
+    F_juv_pop_storage_boot_clean <-
+      data.frame(F_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = F_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "F", 
+             species = species_name)
+    
+    M_juv_pop_storage_boot_clean <-
+      data.frame(M_juv_pop_storage_boot) %>% 
+      dplyr::rename(pop_size = M_juv_pop_storage_boot) %>% 
+      mutate(age = c(0:((n/2)-1))) %>% 
+      mutate(sex = "M", 
+             species = species_name)
+    
+    # calc JSR as the proportion of the juvenile population that is male
+    out <- 
+      left_join(F_juv_pop_storage_boot_clean, 
+                M_juv_pop_storage_boot_clean, 
+                by = c("species", "age"))  %>% 
+      mutate(JSR = pop_size.y / (pop_size.y + pop_size.x))
+    
+    # extract and store the final JSR value
+    imm_N_pert_JSR[i, g] <- out[(n/2), "JSR"]
+  }
+  
+  # get the spline function of JSR
+  spl_JSR <- 
+    smooth.spline(imm_N_pert_JSR[which(!is.na(imm_N_pert_JSR[, g])), g] ~ 
+                    names(imm_N_pert_JSR[which(!is.na(imm_N_pert_JSR[, g])), g]))
+  
+  # estimate the slope of the tangent of the spline at the vital rate
+  JSR_pert_results[which(JSR_pert_results$parameter == "imm_N"), 2] <- 
+    predict(spl_JSR, x = imm_N_base, deriv = 1)$y
+  
+  # re-scale sensitivity into elasticity
+  JSR_pert_results[which(JSR_pert_results$parameter == "imm_N"), 3] <- 
+    imm_N_base / JSR_base * JSR_pert_results[which(JSR_pert_results$parameter == "imm_N"), 2]
+  
 }
 
 flight_dat <- 

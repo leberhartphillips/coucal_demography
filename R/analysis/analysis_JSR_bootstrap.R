@@ -74,6 +74,8 @@ BC_JSR_run_5050_HSR <-
 # save model output
 saveRDS(object = BC_JSR_run, 
         file = "output/bootstraps/hazard/cooked/BC_hazard_JSR_bootstrap_result_stoch.rds")
+saveRDS(object = BC_JSR_run_5050_HSR, 
+        file = "output/bootstraps/hazard/cooked/BC_hazard_JSR_bootstrap_result_stoch_5050_HSR.rds")
 
 #### Run WBC JSR Bootstrap ----
 WBC_F_rates <- 
@@ -124,3 +126,5 @@ WBC_JSR_run_5050_HSR <-
 # save model output
 saveRDS(object = WBC_JSR_run, 
         file = "output/bootstraps/hazard/cooked/WBC_hazard_JSR_bootstrap_result_stoch.rds")
+saveRDS(object = WBC_JSR_run_5050_HSR, 
+        file = "output/bootstraps/hazard/cooked/WBC_hazard_JSR_bootstrap_result_stoch_5050_HSR.rds")
