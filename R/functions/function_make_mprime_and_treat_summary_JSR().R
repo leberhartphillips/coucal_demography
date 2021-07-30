@@ -1,6 +1,8 @@
-# make_mprime_matrix() makes a prime-matrix (i.e., a matrix halfway between
-# the treatment matrix and the unbiased matrix) from a set of vital rate
-# summaries
+# make_mprime_and_treat_summary_JSR() makes the M-prime life table (i.e., a 
+# table with all rates halfway between the treatment table and the unbiased 
+# table (either unbiased with all female rates == male rates (when base_sex is
+# "Male") or unbiased with all males rates == female rates (when base_sex is
+# "Female"))
 
 make_mprime_and_treat_summary_JSR <- 
   function(survival_rates_boot_summary, species_name, 
@@ -32,6 +34,10 @@ make_mprime_and_treat_summary_JSR <-
     LTRE_mprime <- 
       bind_rows(survival_rates_LTRE_mprime, other_rates_LTRE_mprime)
     
+    # make M-prime life table (i.e., if "Male", then the female vital rates are
+    # set to halfway between male and female rates, and male rates stay as observed.
+    # If "Female", then male rates are set to halfway between female and male 
+    # rates, and female rates stay as observed)
     if(mprime == TRUE){
       if(base_sex == "Male"){
         LTRE_mprime <- 
@@ -46,6 +52,8 @@ make_mprime_and_treat_summary_JSR <-
           dplyr::select(!mprime)
       }
     }
+    
+    # make treatment life table (i.e., all the observed sex-specific rates)
     else{
       LTRE_mprime <- 
         LTRE_mprime %>% 

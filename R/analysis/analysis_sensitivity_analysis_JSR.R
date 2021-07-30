@@ -38,9 +38,6 @@ WBC_hazard_rate_boot_tidy <-
                           output_dir = "output/bootstraps/hazard/cooked/",
                           rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc")
 
-hazard_rate_boot_tidy <- 
-  bind_rows(BC_hazard_rate_boot_tidy, WBC_hazard_rate_boot_tidy)
-
 # extract age-specific survival rates from the bootstrap procedure and summarize by age
 survival_rates_boot_summary <- 
   bind_rows(BC_hazard_rate_boot_tidy$hazard_rates_boot,
@@ -52,7 +49,7 @@ survival_rates_boot_summary <-
   mutate(fit = 1 - fit) %>% 
   dplyr::select(species, sex, age, fit)
 
-#### Arguments ----
+#### BC Arguments ----
 species_name = "BC"
 imm_N_base = 100
 ISR_rate = pull(filter(parameter_distributions, 
@@ -64,27 +61,27 @@ k_rate = pull(filter(parameter_distributions,
 h_rate = (1 / pull(filter(parameter_distributions, 
                           species == species_name & trait == "mating_system"), 
                    mean))
-HSR_rate = pull(filter(parameter_distributions, 
-                       species == species_name & trait == "hatching_sex_ratio"), 
-                mean)
+HSR_rate = 0.5#pull(filter(parameter_distributions, 
+                       #species == species_name & trait == "hatching_sex_ratio"), 
+                #mean)
 egg_S_rate = pull(filter(parameter_distributions, 
                          species == species_name & trait == "egg_survival"), 
                   mean)
-JSR_base = 
-  bind_rows(BC_JSR_out,
-            WBC_JSR_out) %>%
-  mutate(species = factor(species, levels = c("BC", "WBC"))) %>% 
-  dplyr::group_by(species, age) %>%
-  dplyr::summarise(ucl_JSR = stats::quantile(JSR, (1 - CI)/2, na.rm = TRUE),
-                   lcl_JSR = stats::quantile(JSR, 1 - (1 - CI)/2, na.rm = TRUE),
-                   avg_JSR = mean(JSR, na.rm = TRUE),
-                   med_JSR = median(JSR, na.rm = TRUE),
-                   max_JSR = max(JSR, na.rm = TRUE),
-                   min_JSR = min(JSR, na.rm = TRUE)) %>% 
-  filter(age == (length(unique(survival_rates$age)) - 2) & species == species_name) %>% 
-  pull(avg_JSR)
+# JSR_base = 
+#   bind_rows(BC_JSR_out,
+#             WBC_JSR_out) %>%
+#   mutate(species = factor(species, levels = c("BC", "WBC"))) %>% 
+#   dplyr::group_by(species, age) %>%
+#   dplyr::summarise(ucl_JSR = stats::quantile(JSR, (1 - CI)/2, na.rm = TRUE),
+#                    lcl_JSR = stats::quantile(JSR, 1 - (1 - CI)/2, na.rm = TRUE),
+#                    avg_JSR = mean(JSR, na.rm = TRUE),
+#                    med_JSR = median(JSR, na.rm = TRUE),
+#                    max_JSR = max(JSR, na.rm = TRUE),
+#                    min_JSR = min(JSR, na.rm = TRUE)) %>% 
+#   filter(age == (length(unique(survival_rates$age)) - 2) & species == species_name) %>% 
+#   pull(avg_JSR)
 
-#### analysis ----
+#### BC LTRE analysis ----
 BC_VR_treat <-
   make_mprime_and_treat_summary_JSR(survival_rates_boot_summary = survival_rates_boot_summary,
                                     h_rate = h_rate,
@@ -150,21 +147,21 @@ BC_treat_sensitivity_analysis <-
                            JSR_base = BC_JSR_treat)
 
 saveRDS(object = BC_treat_sensitivity_analysis, 
-        file = "output/sensitivity_analysis/BC_treat_sensitivity_analysis_JSR.rds")
+        file = "output/sensitivity_analysis/BC_treat_sensitivity_analysis_JSR_5050_HSR.rds")
 
 BC_Mprime_sensitivity_analysis_male <- 
   sensitivity_analysis_JSR(VR_dataframe = BC_VR_mprime_male, 
                            JSR_base = BC_JSR_mprime_male)
 
 saveRDS(object = BC_Mprime_sensitivity_analysis_male, 
-        file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_JSR.rds")
+        file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_JSR_5050_HSR.rds")
 
 BC_Mprime_sensitivity_analysis_female <- 
   sensitivity_analysis_JSR(VR_dataframe = BC_VR_mprime_female, 
                            JSR_base = BC_JSR_mprime_female)
 
 saveRDS(object = BC_Mprime_sensitivity_analysis_female, 
-        file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_JSR.rds")
+        file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_JSR_5050_HSR.rds")
 
 BC_LTRE_male <- 
   LTRE_analysis_JSR(Mprime_sens = BC_Mprime_sensitivity_analysis_male, 
@@ -174,6 +171,130 @@ BC_LTRE_male <-
 BC_LTRE_female <- 
   LTRE_analysis_JSR(Mprime_sens = BC_Mprime_sensitivity_analysis_female, 
                     VR_dataframe = BC_VR_treat,
+                    base_sex = "female")
+
+#### WBC Arguments ----
+species_name = "WBC"
+imm_N_base = 100
+ISR_rate = pull(filter(parameter_distributions, 
+                       species == species_name & trait == "immigration_sex_ratio"), 
+                mean)
+k_rate = pull(filter(parameter_distributions, 
+                     species == species_name & trait == "clutch_size"), 
+              mean)
+h_rate = (1 / pull(filter(parameter_distributions, 
+                          species == species_name & trait == "mating_system"), 
+                   mean))
+HSR_rate = 0.5#pull(filter(parameter_distributions, 
+#species == species_name & trait == "hatching_sex_ratio"), 
+#mean)
+egg_S_rate = pull(filter(parameter_distributions, 
+                         species == species_name & trait == "egg_survival"), 
+                  mean)
+JSR_base = 
+  bind_rows(BC_JSR_out,
+            WBC_JSR_out) %>%
+  mutate(species = factor(species, levels = c("BC", "WBC"))) %>% 
+  dplyr::group_by(species, age) %>%
+  dplyr::summarise(ucl_JSR = stats::quantile(JSR, (1 - CI)/2, na.rm = TRUE),
+                   lcl_JSR = stats::quantile(JSR, 1 - (1 - CI)/2, na.rm = TRUE),
+                   avg_JSR = mean(JSR, na.rm = TRUE),
+                   med_JSR = median(JSR, na.rm = TRUE),
+                   max_JSR = max(JSR, na.rm = TRUE),
+                   min_JSR = min(JSR, na.rm = TRUE)) %>% 
+  filter(age == (length(unique(survival_rates$age)) - 2) & species == species_name) %>% 
+  pull(avg_JSR)
+
+#### WBC LTRE analysis ----
+WBC_VR_treat <-
+  make_mprime_and_treat_summary_JSR(survival_rates_boot_summary = survival_rates_boot_summary,
+                                    h_rate = h_rate,
+                                    HSR_rate = HSR_rate,
+                                    k_rate = k_rate,
+                                    ISR_rate = ISR_rate, 
+                                    imm_N_base = imm_N_base,
+                                    egg_S_rate = egg_S_rate,
+                                    species_name = "WBC", 
+                                    mprime = FALSE)
+
+WBC_VR_mprime_male <- 
+  make_mprime_and_treat_summary_JSR(survival_rates_boot_summary = survival_rates_boot_summary,
+                                    h_rate = h_rate,
+                                    HSR_rate = HSR_rate,
+                                    k_rate = k_rate,
+                                    ISR_rate = ISR_rate, 
+                                    imm_N_base = imm_N_base,
+                                    egg_S_rate = egg_S_rate,
+                                    species_name = "WBC", 
+                                    base_sex = "Male")
+
+WBC_VR_mprime_female <- 
+  make_mprime_and_treat_summary_JSR(survival_rates_boot_summary = survival_rates_boot_summary,
+                                    h_rate = h_rate,
+                                    HSR_rate = HSR_rate,
+                                    k_rate = k_rate,
+                                    ISR_rate = ISR_rate, 
+                                    imm_N_base = imm_N_base,
+                                    egg_S_rate = egg_S_rate,
+                                    species_name = "WBC", 
+                                    base_sex = "Female")
+
+WBC_treatment_JSR_analysis <- 
+  JSR_bootstrap_deter(VR_dataframe = WBC_VR_treat,
+                      immigrant_pop_size = 100,
+                      species = "WBC")
+
+WBC_M_prime_JSR_analysis_male <- 
+  JSR_bootstrap_deter(VR_dataframe = WBC_VR_mprime_male,
+                      immigrant_pop_size = 100,
+                      species = "WBC")
+
+WBC_M_prime_JSR_analysis_female <- 
+  JSR_bootstrap_deter(VR_dataframe = WBC_VR_mprime_female,
+                      immigrant_pop_size = 100,
+                      species = "WBC")
+
+WBC_JSR_treat <- 
+  WBC_treatment_JSR_analysis[nrow(WBC_treatment_JSR_analysis), "JSR"] 
+WBC_JSR_treat
+
+WBC_JSR_mprime_male <- 
+  WBC_M_prime_JSR_analysis_male[nrow(WBC_M_prime_JSR_analysis_male), "JSR"] 
+WBC_JSR_mprime_male
+
+WBC_JSR_mprime_female <- 
+  WBC_M_prime_JSR_analysis_female[nrow(WBC_M_prime_JSR_analysis_female), "JSR"] 
+WBC_JSR_mprime_female 
+
+WBC_treat_sensitivity_analysis <- 
+  sensitivity_analysis_JSR(VR_dataframe = WBC_VR_treat, 
+                           JSR_base = WBC_JSR_treat)
+
+saveRDS(object = WBC_treat_sensitivity_analysis, 
+        file = "output/sensitivity_analysis/WBC_treat_sensitivity_analysis_JSR_5050_HSR.rds")
+
+WBC_Mprime_sensitivity_analysis_male <- 
+  sensitivity_analysis_JSR(VR_dataframe = WBC_VR_mprime_male, 
+                           JSR_base = WBC_JSR_mprime_male)
+
+saveRDS(object = WBC_Mprime_sensitivity_analysis_male, 
+        file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_JSR_5050_HSR.rds")
+
+WBC_Mprime_sensitivity_analysis_female <- 
+  sensitivity_analysis_JSR(VR_dataframe = WBC_VR_mprime_female, 
+                           JSR_base = WBC_JSR_mprime_female)
+
+saveRDS(object = WBC_Mprime_sensitivity_analysis_female, 
+        file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_JSR_5050_HSR.rds")
+
+WBC_LTRE_male <- 
+  LTRE_analysis_JSR(Mprime_sens = WBC_Mprime_sensitivity_analysis_male, 
+                    VR_dataframe = WBC_VR_treat,
+                    base_sex = "male")
+
+WBC_LTRE_female <- 
+  LTRE_analysis_JSR(Mprime_sens = WBC_Mprime_sensitivity_analysis_female, 
+                    VR_dataframe = WBC_VR_treat,
                     base_sex = "female")
 
 # WBC_VR_treat <- 
@@ -306,36 +427,38 @@ BC_LTRE_female <-
 #conduct the LTRE comparing the two matrices
 # ```{r}
 
-WBC_LTRE_male <- 
-  LTRE_analysis(Mprime_sens = WBC_Mprime_sensitivity_analysis_male, 
-                matrix_str = matrix_str, 
-                vital_rates = WBC_VR_treat,
-                species_name = "WBC",
-                sex = "male")
+# WBC_LTRE_male <- 
+#   LTRE_analysis(Mprime_sens = WBC_Mprime_sensitivity_analysis_male, 
+#                 matrix_str = matrix_str, 
+#                 vital_rates = WBC_VR_treat,
+#                 species_name = "WBC",
+#                 sex = "male")
+# 
+# WBC_LTRE_female <- 
+#   LTRE_analysis(Mprime_sens = WBC_Mprime_sensitivity_analysis_female, 
+#                 matrix_str = matrix_str, 
+#                 vital_rates = WBC_VR_treat,
+#                 species_name = "WBC",
+#                 sex = "female")
 
-WBC_LTRE_female <- 
-  LTRE_analysis(Mprime_sens = WBC_Mprime_sensitivity_analysis_female, 
-                matrix_str = matrix_str, 
-                vital_rates = WBC_VR_treat,
-                species_name = "WBC",
-                sex = "female")
-
-LTRE_coucal_male_ASR <- 
-  bind_rows(BC_LTRE_male$LTRE_ASR, WBC_LTRE_male$LTRE_ASR) %>% 
+LTRE_coucal_male_JSR <- 
+  bind_rows(BC_LTRE_male, WBC_LTRE_male) %>% 
   mutate(sex = "male")
 
-LTRE_coucal_female_ASR <- 
-  bind_rows(BC_LTRE_female$LTRE_ASR, WBC_LTRE_female$LTRE_ASR) %>% 
+LTRE_coucal_female_JSR <- 
+  bind_rows(BC_LTRE_female, WBC_LTRE_female) %>% 
   mutate(sex = "female")
 
-LTRE_coucal_ASR <- rbind(LTRE_coucal_male_ASR, LTRE_coucal_female_ASR)
+LTRE_coucal_JSR <- 
+  rbind(LTRE_coucal_male_JSR, LTRE_coucal_female_JSR) %>% 
+  mutate(parameter = ifelse(nchar(parameter) == 5, 
+                            paste(str_sub(parameter, 1, 4), 
+                                  str_sub(parameter, 5, 5), sep = "0"), 
+                            parameter),
+         label = ifelse(str_detect(parameter, "age_"), as.numeric(str_sub(parameter, 5, 6)),
+                        ifelse(str_detect(parameter, "h"), "Mating system",
+                               ifelse(str_detect(parameter, "HSR"), "Hatching sex ratio",
+                                      ifelse(str_detect(parameter, "ISR"), "Immigration sex ratio", "XXX")))))
 
-LTRE_coucal_ASR$parameter <- 
-  factor(LTRE_coucal_ASR$parameter, 
-         levels = c("Hatching sex ratio",
-                    "Nestling survival",
-                    "Groundling survival",
-                    "Fledgling survival",
-                    "Adult survival",
-                    "Mating system",
-                    "Immigrant sex ratio"))
+saveRDS(object = LTRE_coucal_JSR, 
+        file = "output/sensitivity_analysis/LTRE_coucal_JSR_5050_HSR.rds")

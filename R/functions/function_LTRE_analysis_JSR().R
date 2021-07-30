@@ -18,7 +18,7 @@ LTRE_analysis_JSR <-
       mutate(parameter = ifelse(str_detect(parameter, "F_age_"), str_remove(parameter, "F_"), 
                                 ifelse(str_detect(parameter, "M_age_"), str_remove(parameter, "M_"), parameter))) %>% 
       pivot_wider(names_from = sex, values_from = c(obs, sensitivities)) %>% 
-      mutate(contribution = ifelse(str_detect(parameter, "age_"), (obs_F - obs_M) * sensitivities_M,
+      mutate(contribution = ifelse(str_detect(parameter, "age_"), (obs_F - obs_M) * sensitivities_F,
                                      ifelse(parameter == "h", (1 - obs_NA) * sensitivities_NA,
                                                    ifelse(parameter == "HSR", (obs_NA - 0.5) * sensitivities_NA,
                                                           ifelse(parameter == "ISR", (obs_NA - 0.5) * sensitivities_NA, NA))))) %>% 
@@ -36,7 +36,7 @@ LTRE_analysis_JSR <-
         mutate(parameter = ifelse(str_detect(parameter, "F_age_"), str_remove(parameter, "F_"), 
                                   ifelse(str_detect(parameter, "M_age_"), str_remove(parameter, "M_"), parameter))) %>% 
         pivot_wider(names_from = sex, values_from = c(obs, sensitivities)) %>% 
-        mutate(contribution = ifelse(str_detect(parameter, "age_"), (obs_M - obs_F) * sensitivities_F,
+        mutate(contribution = ifelse(str_detect(parameter, "age_"), (obs_M - obs_F) * sensitivities_M,
                                      ifelse(parameter == "h", (1 - obs_NA) * sensitivities_NA,
                                             ifelse(parameter == "HSR", (obs_NA - 0.5) * sensitivities_NA,
                                                    ifelse(parameter == "ISR", (obs_NA - 0.5) * sensitivities_NA, NA))))) %>% 
