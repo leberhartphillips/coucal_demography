@@ -812,7 +812,7 @@ flight_dat <-
              end_groundling_lower = c(34, 29),
              end_groundling_upper = c(38, 35))
 
-JSR_pert_results %>%
+WBC_Mprime_sensitivity_analysis_female$JSR_pert_results %>%
   filter(str_detect(parameter, "_age_")) %>% 
   mutate(sex = ifelse(str_detect(parameter, "F_"), "Female", "Male"),
          age = c(0:69),
@@ -820,10 +820,10 @@ JSR_pert_results %>%
   filter(age != 69) %>% 
   ggplot(data = .) +
   geom_line(aes(x = age, y = abs_sen, color = sex)) +
-  geom_vline(data = filter(flight_dat, species == "BC"),
+  geom_vline(data = filter(flight_dat, species == "WBC"),
              aes(xintercept = end_nestling), 
              linetype = "dashed", alpha = 0.5, color = "grey20") +
-  geom_vline(data = filter(flight_dat, species == "BC"),
+  geom_vline(data = filter(flight_dat, species == "WBC"),
              aes(xintercept = end_groundling),
              linetype = "dashed", alpha = 0.5, color = "grey20") +
   ylab("Sensitivity of JSR to changes in daily survival") +
