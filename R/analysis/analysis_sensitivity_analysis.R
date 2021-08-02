@@ -55,7 +55,7 @@ survival_rates_boot_summary <-
 
 BC_VR_treat <- 
   make_treat_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                    h = pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
+                    h = 1/pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
                     HSR = pull(filter(parameter_distributions, species == "BC" & trait == "hatching_sex_ratio"), mean),
                     k = pull(filter(parameter_distributions, species == "BC" & trait == "clutch_size"), mean),
                     ISR = pull(filter(parameter_distributions, species == "BC" & trait == "immigration_sex_ratio"), mean),
@@ -63,7 +63,7 @@ BC_VR_treat <-
 
 BC_VR_mprime_male <- 
   make_mprime_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                     h = pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
+                     h = 1/pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
                      HSR = pull(filter(parameter_distributions, species == "BC" & trait == "hatching_sex_ratio"), mean),
                      k = pull(filter(parameter_distributions, species == "BC" & trait == "clutch_size"), mean),
                      ISR = pull(filter(parameter_distributions, species == "BC" & trait == "immigration_sex_ratio"), mean),
@@ -72,7 +72,7 @@ BC_VR_mprime_male <-
 
 BC_VR_mprime_female <- 
   make_mprime_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                     h = pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
+                     h = 1/pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
                      HSR = pull(filter(parameter_distributions, species == "BC" & trait == "hatching_sex_ratio"), mean),
                      k = pull(filter(parameter_distributions, species == "BC" & trait == "clutch_size"), mean),
                      ISR = pull(filter(parameter_distributions, species == "BC" & trait == "immigration_sex_ratio"), mean),
@@ -80,7 +80,7 @@ BC_VR_mprime_female <-
                      sex = "female")
 WBC_VR_treat <- 
   make_treat_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                    h = pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
+                    h = 1/pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
                     HSR = pull(filter(parameter_distributions, species == "WBC" & trait == "hatching_sex_ratio"), mean),
                     k = pull(filter(parameter_distributions, species == "WBC" & trait == "clutch_size"), mean),
                     ISR = pull(filter(parameter_distributions, species == "WBC" & trait == "immigration_sex_ratio"), mean),
@@ -88,7 +88,7 @@ WBC_VR_treat <-
 
 WBC_VR_mprime_male <- 
   make_mprime_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                     h = pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
+                     h = 1/pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
                      HSR = pull(filter(parameter_distributions, species == "WBC" & trait == "hatching_sex_ratio"), mean),
                      k = pull(filter(parameter_distributions, species == "WBC" & trait == "clutch_size"), mean),
                      ISR = pull(filter(parameter_distributions, species == "WBC" & trait == "immigration_sex_ratio"), mean),
@@ -97,7 +97,7 @@ WBC_VR_mprime_male <-
 
 WBC_VR_mprime_female <- 
   make_mprime_matrix(survival_rates_boot_summary = survival_rates_boot_summary,
-                     h = pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
+                     h = 1/pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
                      HSR = pull(filter(parameter_distributions, species == "WBC" & trait == "hatching_sex_ratio"), mean),
                      k = pull(filter(parameter_distributions, species == "WBC" & trait == "clutch_size"), mean),
                      ISR = pull(filter(parameter_distributions, species == "WBC" & trait == "immigration_sex_ratio"), mean),
@@ -114,7 +114,7 @@ WBC_M_prime_matrix_female <- coucal_matrix(WBC_VR_mprime_female)
 
 BC_treatment_ASR_analysis <- 
   matrix_ASR(M = BC_treatment_matrix,  
-             h = 1/BC_VR_treat$h, 
+             h = BC_VR_treat$h, 
              k = BC_VR_treat$k,
              HSR = BC_VR_treat$HSR,
              ISR = BC_VR_treat$ISR, 
@@ -129,12 +129,12 @@ BC_ASR_treat
 
 WBC_treatment_ASR_analysis <- 
   matrix_ASR(M = WBC_treatment_matrix,  
-             h = 1/WBC_VR_treat$h, 
+             h = WBC_VR_treat$h, 
              k = WBC_VR_treat$k,
              HSR = WBC_VR_treat$HSR,
              ISR = WBC_VR_treat$ISR, 
              immigrant_pop_size = 0,
-             iterations = 100, 
+             iterations = 1000, 
              num_boot = 1, 
              iter_add = 1,
              species = "BC")
@@ -144,12 +144,12 @@ WBC_ASR_treat
 
 BC_M_prime_ASR_analysis_male <- 
   matrix_ASR(M = BC_M_prime_matrix_male, 
-             h = 1/BC_VR_mprime_male$h, 
+             h = BC_VR_mprime_male$h, 
              k = BC_VR_mprime_male$k,
              HSR = BC_VR_mprime_male$HSR,
              ISR = BC_VR_mprime_male$ISR,
              immigrant_pop_size = 0,
-             iterations = 100,
+             iterations = 1000,
              num_boot = 1,
              iter_add = 1,
              species = "BC")
@@ -159,12 +159,12 @@ BC_ASR_mprime_male
 
 BC_M_prime_ASR_analysis_female <- 
   matrix_ASR(M = BC_M_prime_matrix_female, 
-             h = 1/BC_VR_mprime_female$h, 
+             h = BC_VR_mprime_female$h, 
              k = BC_VR_mprime_female$k,
              HSR = BC_VR_mprime_female$HSR,
              ISR = BC_VR_mprime_female$ISR,
              immigrant_pop_size = 0,
-             iterations = 100,
+             iterations = 1000,
              num_boot = 1,
              iter_add = 1,
              species = "BC")
@@ -179,7 +179,7 @@ WBC_M_prime_ASR_analysis_male <-
              HSR = WBC_VR_mprime_male$HSR,
              ISR = WBC_VR_mprime_male$ISR,
              immigrant_pop_size = 0,
-             iterations = 100,
+             iterations = 1000,
              num_boot = 1,
              iter_add = 1,
              species = "BC")
@@ -194,7 +194,7 @@ WBC_M_prime_ASR_analysis_female <-
              HSR = WBC_VR_mprime_female$HSR,
              ISR = WBC_VR_mprime_female$ISR,
              immigrant_pop_size = 0,
-             iterations = 100,
+             iterations = 1000,
              num_boot = 1,
              iter_add = 1,
              species = "BC")
@@ -223,7 +223,7 @@ WBC_lambda_mprime_female
 BC_treat_sensitivity_analysis <- 
   sensitivity_analysis(vital_rate_summary = BC_VR_treat, 
                        matrix_str = matrix_structure, 
-                       h = 1/BC_VR_treat$h, 
+                       h = BC_VR_treat$h, 
                        k = BC_VR_treat$k, 
                        HSR = BC_VR_treat$HSR, 
                        niter = 1000, 
@@ -234,7 +234,7 @@ BC_treat_sensitivity_analysis <-
 BC_Mprime_sensitivity_analysis_male <- 
   sensitivity_analysis(vital_rate_summary = BC_VR_mprime_male, 
                        matrix_str = matrix_structure, 
-                       h = 1/BC_VR_mprime_male$h, 
+                       h = BC_VR_mprime_male$h, 
                        k = BC_VR_mprime_male$k, 
                        HSR = BC_VR_mprime_male$HSR, 
                        niter = 1000, 
@@ -245,7 +245,7 @@ BC_Mprime_sensitivity_analysis_male <-
 BC_Mprime_sensitivity_analysis_female <- 
   sensitivity_analysis(vital_rate_summary = BC_VR_mprime_female, 
                        matrix_str = matrix_structure, 
-                       h = 1/BC_VR_mprime_female$h, 
+                       h = BC_VR_mprime_female$h, 
                        k = BC_VR_mprime_female$k, 
                        HSR = BC_VR_mprime_female$HSR, 
                        niter = 1000, 
@@ -256,7 +256,7 @@ BC_Mprime_sensitivity_analysis_female <-
 WBC_treat_sensitivity_analysis <- 
   sensitivity_analysis(vital_rate_summary = WBC_VR_treat, 
                        matrix_str = matrix_structure, 
-                       h = 1/WBC_VR_treat$h, 
+                       h = WBC_VR_treat$h, 
                        k = WBC_VR_treat$k, 
                        HSR = WBC_VR_treat$HSR, 
                        niter = 1000, 
@@ -267,7 +267,7 @@ WBC_treat_sensitivity_analysis <-
 WBC_Mprime_sensitivity_analysis_male <- 
   sensitivity_analysis(vital_rate_summary = WBC_VR_mprime_male, 
                        matrix_str = matrix_structure, 
-                       h = 1/WBC_VR_mprime_male$h, 
+                       h = WBC_VR_mprime_male$h, 
                        k = WBC_VR_mprime_male$k, 
                        HSR = WBC_VR_mprime_male$HSR, 
                        niter = 1000, 
@@ -278,7 +278,7 @@ WBC_Mprime_sensitivity_analysis_male <-
 WBC_Mprime_sensitivity_analysis_female <- 
   sensitivity_analysis(vital_rate_summary = WBC_VR_mprime_female, 
                        matrix_str = matrix_structure, 
-                       h = 1/WBC_VR_mprime_female$h, 
+                       h = WBC_VR_mprime_female$h, 
                        k = WBC_VR_mprime_female$k, 
                        HSR = WBC_VR_mprime_female$HSR, 
                        niter = 1000, 
@@ -354,3 +354,23 @@ LTRE_coucal_ASR$parameter <-
                     "Adult survival",
                     "Mating system",
                     "Immigrant sex ratio"))
+
+LTRE_contributions_check(M_matrix_vital_rates = BC_VR_treat, 
+                         Mprime_sensitivities = BC_Mprime_sensitivity_analysis_male$ASR_pert_results$sensitivities, 
+                         M_matrix_ASR = BC_ASR_treat, 
+                         scenario = "male")
+
+LTRE_contributions_check(M_matrix_vital_rates = BC_VR_treat, 
+                         Mprime_sensitivities = BC_Mprime_sensitivity_analysis_female$ASR_pert_results$sensitivities, 
+                         M_matrix_ASR = BC_ASR_treat, 
+                         scenario = "female")
+
+LTRE_contributions_check(M_matrix_vital_rates = WBC_VR_treat, 
+                         Mprime_sensitivities = WBC_Mprime_sensitivity_analysis_male$ASR_pert_results$sensitivities, 
+                         M_matrix_ASR = WBC_ASR_treat, 
+                         scenario = "male")
+
+LTRE_contributions_check(M_matrix_vital_rates = WBC_VR_treat, 
+                         Mprime_sensitivities = WBC_Mprime_sensitivity_analysis_female$ASR_pert_results$sensitivities, 
+                         M_matrix_ASR = WBC_ASR_treat, 
+                         scenario = "female")

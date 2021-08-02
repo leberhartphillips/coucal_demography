@@ -34,7 +34,7 @@ LTRE_contributions_check <-
           (M_matrix_vital_rates[[8]] - M_matrix_vital_rates[[8]]) * 
             Mprime_sensitivities[4],
           
-          (M_matrix_vital_rates[[10]] - 1) *
+          (1 - M_matrix_vital_rates[[10]]) *
             Mprime_sensitivities[9],
           
           (M_matrix_vital_rates[[12]] - 0.5) * Mprime_sensitivities[11],
@@ -70,7 +70,7 @@ LTRE_contributions_check <-
           (M_matrix_vital_rates[[4]] - M_matrix_vital_rates[[4]]) * 
             Mprime_sensitivities[8],
           
-          (M_matrix_vital_rates[[10]] - 1) *
+          (1 - M_matrix_vital_rates[[10]]) *
             Mprime_sensitivities[9],
           
           (M_matrix_vital_rates[[12]] - 0.5) * Mprime_sensitivities[11],

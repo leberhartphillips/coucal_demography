@@ -21,7 +21,7 @@ LTRE_analysis <-
                  contribution = numeric(7))
     
     # run a for loop to extract the parameter contributions
-    if (sex == "female"){
+    if (sex == "male"){
       # male rates scenario
       for(i in 1:nrow(LTRE_ASR))
       {
@@ -29,47 +29,6 @@ LTRE_analysis <-
           
           # survival rates
           ifelse(i < 5, (vital_rates[[i + 4]] - vital_rates[[i]]) * 
-                   Mprime_sens$ASR_pert_results$sensitivities[i],
-                 
-                 # HSR
-                 ifelse(i == 5, (vital_rates[[12]] - 0.5) * 
-                          Mprime_sens$ASR_pert_results$sensitivities[11],
-                        
-                        # ISR
-                        ifelse(i == 6, (vital_rates[[13]] - 0.5) * 
-                                 Mprime_sens$ASR_pert_results$sensitivities[12],
-                               
-                               # mating system
-                               (1 - vital_rates[[11]]) * 
-                                 Mprime_sens$ASR_pert_results$sensitivities[9])))
-      }
-      for(i in 1:nrow(LTRE_lambda))
-      {
-        # survival rates
-        ifelse(i < 5, (vital_rates[[i + 4]] - vital_rates[[i]]) * 
-                 Mprime_sens$lambda_pert_results$sensitivities[i],
-               
-               # HSR
-               ifelse(i == 5, (vital_rates[[12]] - 0.5) * 
-                        Mprime_sens$lambda_pert_results$sensitivities[11],
-                      
-                      # ISR
-                      ifelse(i == 6, (vital_rates[[13]] - 0.5) * 
-                               Mprime_sens$lambda_pert_results$sensitivities[12],
-                             
-                             # mating system
-                             (1 - vital_rates[[11]]) * 
-                               Mprime_sens$lambda_pert_results$sensitivities[9])))
-      }
-    }
-    else{
-      # female rates scenario
-      for(i in 1:nrow(LTRE_ASR))
-      {
-        LTRE_ASR[i, 2] <-
-          
-          # survival rates
-          ifelse(i < 5, (vital_rates[[i]] - vital_rates[[i + 4]]) * 
                    Mprime_sens$ASR_pert_results$sensitivities[i + 4],
                  
                  # HSR
@@ -81,14 +40,13 @@ LTRE_analysis <-
                                  Mprime_sens$ASR_pert_results$sensitivities[12],
                                
                                # mating system
-                               (1 - vital_rates[[11]]) * 
+                               (1 - vital_rates[[10]]) * 
                                  Mprime_sens$ASR_pert_results$sensitivities[9])))
       }
-      
       for(i in 1:nrow(LTRE_lambda))
       {
         # survival rates
-        ifelse(i < 5, (vital_rates[[i]] - vital_rates[[i + 4]]) * 
+        ifelse(i < 5, (vital_rates[[i + 4]] - vital_rates[[i]]) * 
                  Mprime_sens$lambda_pert_results$sensitivities[i + 4],
                
                # HSR
@@ -100,7 +58,49 @@ LTRE_analysis <-
                                Mprime_sens$lambda_pert_results$sensitivities[12],
                              
                              # mating system
-                             (1 - vital_rates[[11]]) * 
+                             (1 - vital_rates[[10]]) * 
+                               Mprime_sens$lambda_pert_results$sensitivities[9])))
+      }
+    }
+    else{
+      # female rates scenario
+      for(i in 1:nrow(LTRE_ASR))
+      {
+        LTRE_ASR[i, 2] <-
+          
+          # survival rates
+          ifelse(i < 5, (vital_rates[[i]] - vital_rates[[i + 4]]) * 
+                   Mprime_sens$ASR_pert_results$sensitivities[i],
+                 
+                 # HSR
+                 ifelse(i == 5, (vital_rates[[12]] - 0.5) * 
+                          Mprime_sens$ASR_pert_results$sensitivities[11],
+                        
+                        # ISR
+                        ifelse(i == 6, (vital_rates[[13]] - 0.5) * 
+                                 Mprime_sens$ASR_pert_results$sensitivities[12],
+                               
+                               # mating system
+                               (1 - vital_rates[[10]]) * 
+                                 Mprime_sens$ASR_pert_results$sensitivities[9])))
+      }
+      
+      for(i in 1:nrow(LTRE_lambda))
+      {
+        # survival rates
+        ifelse(i < 5, (vital_rates[[i]] - vital_rates[[i + 4]]) * 
+                 Mprime_sens$lambda_pert_results$sensitivities[i],
+               
+               # HSR
+               ifelse(i == 5, (vital_rates[[12]] - 0.5) * 
+                        Mprime_sens$lambda_pert_results$sensitivities[11],
+                      
+                      # ISR
+                      ifelse(i == 6, (vital_rates[[13]] - 0.5) * 
+                               Mprime_sens$lambda_pert_results$sensitivities[12],
+                             
+                             # mating system
+                             (1 - vital_rates[[10]]) * 
                                Mprime_sens$lambda_pert_results$sensitivities[9])))
       }
     }
