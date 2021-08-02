@@ -78,8 +78,8 @@ LTRE_ASR_plot_background <-
                               "Adult survival" = expression(italic(phi["ad"])),
                               "Mating system" = expression(italic("h")),
                               "Immigrant sex ratio" = "ISR")) +
-  scale_y_continuous(limits=c(-0.075,0.075), expand = c(0, 0),
-                     breaks = c(-0.06, -0.04, -0.02, 0.00, 0.02, 0.04, 0.06)) +
+  # scale_y_continuous(limits=c(-0.075,0.075), expand = c(0, 0),
+  #                    breaks = c(-0.06, -0.04, -0.02, 0.00, 0.02, 0.04, 0.06)) +
   ylab("Absolute contribution to adult sex ratio bias") +
   xlab("Sex bias in parameter")
 
@@ -106,8 +106,8 @@ LTRE_ASR_plot <-
   
   scale_fill_manual(values = cbPalette) +
   
-  scale_y_continuous(limits=c(-0.075,0.075), expand = c(0, 0),
-                     breaks = c(-0.06, -0.04, -0.02, 0.00, 0.02, 0.04, 0.06)) +
+  # scale_y_continuous(limits=c(-0.12,0.12), expand = c(0, 0),
+  #                    breaks = c(-0.06, -0.04, -0.02, 0.00, 0.02, 0.04, 0.06)) +
   
   scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
                               "Nestling survival" = expression(italic(S["n"])),
@@ -144,10 +144,10 @@ LTRE_coucal_ASR <-
 prop_contribution_table <- 
   LTRE_coucal_ASR %>% 
   tidyr::expand(., parameter1 = parameter1, parameter2 = parameter1) %>%
-  left_join(., select(LTRE_coucal_ASR, parameter1, contribution, sex, species), 
+  left_join(., dplyr::select(LTRE_coucal_ASR, parameter1, contribution, sex, species), 
             by = c("parameter1")) %>% 
   dplyr::rename(contribution1 = contribution) %>% 
-  left_join(., select(LTRE_coucal_ASR, parameter2, contribution, sex, species), 
+  left_join(., dplyr::select(LTRE_coucal_ASR, parameter2, contribution, sex, species), 
             by = c("parameter2", "species", "sex")) %>% 
   dplyr::rename(contribution2 = contribution) %>% 
   mutate(prop_diff = abs(contribution1) / abs(contribution2),

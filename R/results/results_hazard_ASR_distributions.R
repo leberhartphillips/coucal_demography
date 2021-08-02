@@ -22,17 +22,25 @@ sapply(data.sources, load, .GlobalEnv)
 # WBC_hazard_rate_boot <- 
 #   readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
 
-# clean up the output from the bootstrap procedure and save as rds
-BC_hazard_rate_boot_tidy <- 
-  hazard_boot_out_wrangle(species = "BC", niter = 1000, 
-                          output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_5050_ISR")
+# # clean up the output from the bootstrap procedure and save as rds
+# BC_hazard_rate_boot_tidy <- 
+#   hazard_boot_out_wrangle(species = "BC", niter = 1000, 
+#                           output_dir = "output/bootstraps/hazard/cooked/",
+#                           rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_trans_no_imm")
+# 
+# # clean up the output from the bootstrap procedure and save as rds
+# WBC_hazard_rate_boot_tidy <- 
+#   hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
+#                           output_dir = "output/bootstraps/hazard/cooked/",
+#                           rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_no_imm")
 
-# clean up the output from the bootstrap procedure and save as rds
-WBC_hazard_rate_boot_tidy <- 
-  hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
-                          output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc")
+# load tidy output
+BC_hazard_rate_boot_tidy <-
+  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans_no_imm.rds")
+
+# load tidy output
+WBC_hazard_rate_boot_tidy <-
+  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc_no_imm.rds")
 
 ASR_boot <- 
   bind_rows(BC_hazard_rate_boot_tidy$ASR_ests_boot,

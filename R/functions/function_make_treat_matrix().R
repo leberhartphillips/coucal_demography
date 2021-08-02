@@ -4,26 +4,26 @@ source("R/project/project_libraries.R")
 # vital rates
 
 make_treat_matrix <- 
-  function(survival_rates_boot_summary, species, h, k, HSR, ISR){
+  function(survival_rates_boot_summary, species_name, h, k, HSR, ISR){
     
     list(F_Nestling_survival = filter(survival_rates_boot_summary,
-                                      species == species)[5, 4],
+                                      species == species_name)[7, 4],
          F_Groundling_survival = filter(survival_rates_boot_summary,
-                                        species == species)[4, 4],
+                                        species == species_name)[6, 4],
          F_Fledgling_survival = filter(survival_rates_boot_summary,
-                                       species == species)[3, 4],
+                                       species == species_name)[4, 4],
          F_Adult_survival = filter(survival_rates_boot_summary,
-                                   species == species)[2, 4],
+                                   species == species_name)[2, 4],
          M_Nestling_survival = filter(survival_rates_boot_summary,
-                                      species == species)[10, 4],
+                                      species == species_name)[14, 4],
          M_Groundling_survival = filter(survival_rates_boot_summary,
-                                        species == species)[9, 4],
+                                        species == species_name)[13, 4],
          M_Fledgling_survival = filter(survival_rates_boot_summary,
-                                       species == species)[8, 4],
+                                       species == species_name)[11, 4],
          M_Adult_survival = filter(survival_rates_boot_summary,
-                                   species == species)[7, 4],
+                                   species == species_name)[9, 4],
          Egg_survival = filter(survival_rates_boot_summary,
-                               species == species)[11, 4],
+                               species == species_name)[15, 4],
          
          # Define h (harem size, h = 1 is monogamy) and k (clutch size)
          h = h,

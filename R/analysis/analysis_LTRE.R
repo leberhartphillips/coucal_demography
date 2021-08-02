@@ -7,6 +7,10 @@ function.sources = list.files(path = "R/functions",
                               ignore.case = TRUE)
 sapply(function.sources, source)
 
+# # load tidy output
+# WBC_hazard_rate_boot_tidy <-
+#   readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc_no_imm.rds")
+
 # LTRE analysis
 BC_LTRE_male <- 
   LTRE_analysis(Mprime_sens = BC_Mprime_sensitivity_analysis_male, 

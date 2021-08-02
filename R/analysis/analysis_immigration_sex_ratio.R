@@ -19,12 +19,8 @@ mating_dat <-
          sex = tolower(sex)) %>% 
   
   # remove all white space from data
-  mutate(across(everything(), ~str_trim(~.x))) %>% 
   mutate(across(.cols = everything(), 
-                .fns = str_replace_all(
-                  string = ..1, 
-                  pattern = " ", 
-                  replacement = ""))) %>% 
+                str_remove_all, pattern = fixed(" "))) %>% 
   
   # specify empty data as NA
   mutate(across(everything(), ~gsub("^$|^ $", NA, .x))) %>% 
