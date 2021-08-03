@@ -14,33 +14,33 @@ data.sources = list.files(path = "data/cooked",
                           ignore.case = TRUE)
 sapply(data.sources, load, .GlobalEnv)
 
-# load output
-BC_hazard_rate_boot <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_one.rds")
+# # load output
+# BC_hazard_rate_boot <- 
+#   readRDS("output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_one.rds")
+# 
+# # load output
+# WBC_hazard_rate_boot <- 
+#   readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
+# 
+# # clean up the output from the bootstrap procedure and save as rds
+# BC_hazard_rate_boot_tidy <- 
+#   hazard_boot_out_wrangle(species = "BC", niter = 1000, 
+#                           output_dir = "output/bootstraps/hazard/cooked/",
+#                           rds_file = "_hazard_ASR_bootstrap_result_one")
+# 
+# # clean up the output from the bootstrap procedure and save as rds
+# WBC_hazard_rate_boot_tidy <- 
+#   hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
+#                           output_dir = "output/bootstraps/hazard/cooked/",
+#                           rds_file = "_hazard_ASR_bootstrap_result_one")
 
 # load output
-WBC_hazard_rate_boot <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
-
-# clean up the output from the bootstrap procedure and save as rds
 BC_hazard_rate_boot_tidy <- 
-  hazard_boot_out_wrangle(species = "BC", niter = 1000, 
-                          output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_one")
-
-# clean up the output from the bootstrap procedure and save as rds
-WBC_hazard_rate_boot_tidy <- 
-  hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
-                          output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_one")
-
-# load output
-BC_hazard_rate_boot_tidy <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans_no_imm.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc_no_imm.rds")
 
 # calculate the sex differences in stage specific rates
 BC_sex_diff_hazard_output <- 
@@ -55,12 +55,12 @@ WBC_sex_diff_hazard_output <-
 
 # consolidate results
 sex_diff_survival_output <- 
-  bind_rows(BC_sex_diff_hazard_output,
-            WBC_sex_diff_hazard_output) %>% 
-  filter(stage != "h") %>% 
+  dplyr::bind_rows(BC_sex_diff_hazard_output,
+                   WBC_sex_diff_hazard_output) %>% 
+  dplyr::filter(stage != "h" | stage != "ISR") %>% 
   mutate(stage = factor(stage, 
                         levels = c("HSR", "Nestling", "Groundling", 
-                                   "Fledgling", "Adult", "h", "ISR")),
+                                   "Fledgling", "Adult")),
          species = factor(species, 
                           levels = c("BC", "WBC")))
 
@@ -86,7 +86,7 @@ sex_diff_survival_summary <-
 
 # specify custom color palette to distingush first-year stages 
 # (i.e. chicks and juveniles) from adults
-cbPalette <- c("#D9D9D9", "#D9D9D9", "#D9D9D9", "#D9D9D9", "#A6A6A6", "#A6A6A6")
+cbPalette <- c("#D9D9D9", "#D9D9D9", "#D9D9D9", "#D9D9D9", "#A6A6A6")
 
 species_names <- 
   c('BC' = "Black Coucal",
@@ -106,47 +106,47 @@ sex_diff_survival_output2 <-
          species = factor(species, 
                           levels = c("BC", "WBC")))
 
-HSR_df <- 
-  data.frame(species = c("BC", "WBC"),
-             mean = c(0.4955, 0.5198),
-             upper_CI = c(0.5334, 0.5643),
-             lower_CI = c(0.4577, 0.4751),
-             variable = "HSR")
-
-junk1 <- 
-  data.frame(species = as.character(HSR_df$species), 
-             mean = c(NA,NA), 
-             lower_CI = c(NA,NA), 
-             upper_CI = c(NA,NA),
-             variable = "Nestling")
-junk2 <- 
-  data.frame(species = as.character(HSR_df$species), 
-             mean = c(NA,NA), 
-             lower_CI = c(NA,NA), 
-             upper_CI = c(NA,NA),
-             variable = "Groundling")
-junk3 <- 
-  data.frame(species = as.character(HSR_df$species), 
-             mean = c(NA,NA), 
-             lower_CI = c(NA,NA), 
-             upper_CI = c(NA,NA),
-             variable = "Fledgling")
-junk4 <- 
-  data.frame(species = as.character(HSR_df$species), 
-             mean = c(NA,NA), 
-             lower_CI = c(NA,NA), 
-             upper_CI = c(NA,NA),
-             variable = "Adult")
-HSR_df2 <- 
-  bind_rows(HSR_df, junk1, junk2, junk3, junk4) %>% 
-  mutate(variable = factor(variable, 
-                           levels = c("HSR", "Nestling", "Groundling", 
-                                      "Fledgling", "Adult")),
-         mean = as.numeric(mean),
-         lower_CI = as.numeric(lower_CI),
-         upper_CI = as.numeric(upper_CI),
-         species = factor(species, 
-                          levels = c("BC", "WBC")))
+# HSR_df <- 
+#   data.frame(species = c("BC", "WBC"),
+#              mean = c(0.4955, 0.5198),
+#              upper_CI = c(0.5334, 0.5643),
+#              lower_CI = c(0.4577, 0.4751),
+#              variable = "HSR")
+# 
+# junk1 <- 
+#   data.frame(species = as.character(HSR_df$species), 
+#              mean = c(NA,NA), 
+#              lower_CI = c(NA,NA), 
+#              upper_CI = c(NA,NA),
+#              variable = "Nestling")
+# junk2 <- 
+#   data.frame(species = as.character(HSR_df$species), 
+#              mean = c(NA,NA), 
+#              lower_CI = c(NA,NA), 
+#              upper_CI = c(NA,NA),
+#              variable = "Groundling")
+# junk3 <- 
+#   data.frame(species = as.character(HSR_df$species), 
+#              mean = c(NA,NA), 
+#              lower_CI = c(NA,NA), 
+#              upper_CI = c(NA,NA),
+#              variable = "Fledgling")
+# junk4 <- 
+#   data.frame(species = as.character(HSR_df$species), 
+#              mean = c(NA,NA), 
+#              lower_CI = c(NA,NA), 
+#              upper_CI = c(NA,NA),
+#              variable = "Adult")
+# HSR_df2 <- 
+#   bind_rows(HSR_df, junk1, junk2, junk3, junk4) %>% 
+#   mutate(variable = factor(variable, 
+#                            levels = c("HSR", "Nestling", "Groundling", 
+#                                       "Fledgling", "Adult")),
+#          mean = as.numeric(mean),
+#          lower_CI = as.numeric(lower_CI),
+#          upper_CI = as.numeric(upper_CI),
+#          species = factor(species, 
+#                           levels = c("BC", "WBC")))
 
 # Figure 2a: plot the sex-biases in survival across the three stages
 vital_rate_theme <- 
@@ -197,7 +197,7 @@ surv_diff_plot <-
                                 expression(phantom("-")*"0.50"))) +
   xlab("Life stage") +
   ylab("Sex bias") +
-  scale_x_discrete(labels = c("ISR" = expression(italic("ISR")),
+  scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
                               "HSR" = expression(italic("\u03C1")),
                               "Nestling" = expression(S["n"]),
                               "Groundling" = expression(S["g"]),
@@ -206,14 +206,14 @@ surv_diff_plot <-
 
 background <-
   ggplot(aes(y = difference, x = stage, fill = stage),
-         data = sex_diff_survival_output2) +
+         data = sex_diff_survival_output) +
   # coord_flip() +
   annotate("rect", xmin = -Inf, xmax = Inf, 
            ymin = -Inf, ymax = 0, alpha = 0.6,
-           fill = brewer.pal(8, "Dark2")[c(1)]) +
+           fill = brewer.pal(8, "Set1")[c(1)]) +
   annotate("rect", xmin = -Inf, xmax = Inf, 
            ymin = 0, ymax = Inf, alpha = 0.6,
-           fill = brewer.pal(8, "Dark2")[c(2)]) +
+           fill = brewer.pal(8, "Set1")[c(2)]) +
   annotate("text", x = c(5), y = c(-0.5),
            label = c("\u2640"), size = 4,
            family = "Menlo",
@@ -241,50 +241,50 @@ background <-
         plot.margin = unit(c(0.2, 1.35, 1.05, 0.65), "cm"),
         strip.text = element_text(size = 6, colour = "white")
   ) +
-  scale_x_discrete(labels = c("ISR" = expression(italic("ISR")),
+  scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
                               "HSR" = expression(italic("\u03C1")),
                               "Nestling" = expression(S["n"]),
                               "Groundling" = expression(S["g"]),
                               "Fledgling" = expression(S["f"]),
                               "Adult" = expression(phi["ad"]))) +
   scale_y_continuous(limits = c(-0.65, 0.65), expand = c(0, 0)) +
-  xlab("Life stage") +
-  ylab(expression(paste("Hatching sex ratio\n(",italic("\u03C1"),", 95% CI)"), 
-                  sep = ""))
-
-HSR_plot <- 
-  ggplot(aes(fill = variable), data = HSR_df2) +
-  geom_pointrange(data = HSR_df2, aes(y = mean, x = variable, ymin = lower_CI,
-                                      ymax = upper_CI), size = 0.2, 
-                  fatten = 0.1) +
-  geom_blank(data = HSR_df2, aes(y = mean, x = variable)) +
-  # coord_flip() +
-  facet_grid(. ~ species, labeller = as_labeller(species_names)) +
-  theme(axis.title.x = element_text(size = 7, colour = "black"),
-        axis.text.x  = element_text(size = 8, angle = 45, hjust = 0.9, 
-                                    vjust = 1, colour = "black"),
-        axis.ticks.x = element_line(size = 0.2, colour = "grey40"),
-        axis.title.y = element_text(size = 10, hjust = 0.5, vjust = 1.5, 
-                                    colour = "black"),
-        axis.text.y  = element_text(size = 6, colour = "black"),
-        axis.ticks.y = element_line(size = 0.2, colour = "grey40"),
-        # panel.border = element_rect(colour = "blue"),
-        plot.margin = unit(c(0.2, 1.35, 0.405, -0.07), "cm"),
-        strip.text = element_text(size = 6, colour = "black")
-  ) +
-  scale_y_continuous(limits=c(0,1), expand = c(0, 0)) +
-  xlab("Life stage") +
-  ylab(expression(atop(x = "", 
-                       y = atop(x = "Hatching sex ratio", 
-                                y = paste("(", italic("\u03C1"), ", 95% CI)", 
-                                          sep = ""))))) +
+  xlab("Life stage") #+
   # ylab(expression(paste("Hatching sex ratio\n(",italic("\u03C1"),", 95% CI)"), 
-  #                 sep = "")) +
-  scale_x_discrete(labels = c("HSR" = expression(italic("\u03C1")),
-                              "Nestling" = expression(S["n"]),
-                              "Groundling" = expression(S["g"]),
-                              "Fledgling" = expression(S["f"]),
-                              "Adult" = expression(phi["ad"])))
+  #                 sep = ""))
+
+# HSR_plot <- 
+#   ggplot(aes(fill = variable), data = HSR_df2) +
+#   geom_pointrange(data = HSR_df2, aes(y = mean, x = variable, ymin = lower_CI,
+#                                       ymax = upper_CI), size = 0.2, 
+#                   fatten = 0.1) +
+#   geom_blank(data = HSR_df2, aes(y = mean, x = variable)) +
+#   # coord_flip() +
+#   facet_grid(. ~ species, labeller = as_labeller(species_names)) +
+#   theme(axis.title.x = element_text(size = 7, colour = "black"),
+#         axis.text.x  = element_text(size = 8, angle = 45, hjust = 0.9, 
+#                                     vjust = 1, colour = "black"),
+#         axis.ticks.x = element_line(size = 0.2, colour = "grey40"),
+#         axis.title.y = element_text(size = 10, hjust = 0.5, vjust = 1.5, 
+#                                     colour = "black"),
+#         axis.text.y  = element_text(size = 6, colour = "black"),
+#         axis.ticks.y = element_line(size = 0.2, colour = "grey40"),
+#         # panel.border = element_rect(colour = "blue"),
+#         plot.margin = unit(c(0.2, 1.35, 0.405, -0.07), "cm"),
+#         strip.text = element_text(size = 6, colour = "black")
+#   ) +
+#   scale_y_continuous(limits=c(0,1), expand = c(0, 0)) +
+#   xlab("Life stage") +
+#   ylab(expression(atop(x = "", 
+#                        y = atop(x = "Hatching sex ratio", 
+#                                 y = paste("(", italic("\u03C1"), ", 95% CI)", 
+#                                           sep = ""))))) +
+#   # ylab(expression(paste("Hatching sex ratio\n(",italic("\u03C1"),", 95% CI)"), 
+#   #                 sep = "")) +
+#   scale_x_discrete(labels = c("HSR" = expression(italic("\u03C1")),
+#                               "Nestling" = expression(S["n"]),
+#                               "Groundling" = expression(S["g"]),
+#                               "Fledgling" = expression(S["f"]),
+#                               "Adult" = expression(phi["ad"])))
 
 # jpeg(filename = "products/figures/demographic_differences_plot.jpeg",
 #      # compression = "none",

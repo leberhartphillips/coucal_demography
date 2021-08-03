@@ -68,9 +68,9 @@ ASR_boot_summary <-
 Figure_2b <- 
   ggplot() +
   annotate("rect", xmin=0, xmax=0.5, ymin=0, ymax=200, alpha=0.6,
-           fill= brewer.pal(8, "Dark2")[c(2)]) +
+           fill= brewer.pal(8, "Set1")[c(1)]) +
   annotate("rect", xmin=0.5, xmax=1, ymin=0, ymax=200, alpha=0.6,
-           fill= brewer.pal(8, "Dark2")[c(1)]) +
+           fill= brewer.pal(8, "Set1")[c(2)]) +
   annotate("text", x = c(0.025), y = c(100),
            label = c("\u2640"), size = 4, colour = "grey10",
            family="Menlo", vjust = c(0), hjust = c(0.5)) +
@@ -115,3 +115,11 @@ Figure_2b <-
   scale_y_continuous(limits = c(0, 200), expand = c(0, 0), breaks=c(0, 50, 100, 150, 200))
 
 Figure_2b
+
+ggsave(Figure_2b,
+       filename = "products/figures/ASR_plot.jpeg",
+       width = 4.75,
+       height = 1.59, units = "in",
+       dpi = 600,
+       # compression="lzw",
+       scale = 1)

@@ -63,7 +63,7 @@ Need to set up a sensitivity analysis of the JSR model
 -------------------------
 July 27, 2021
 Stuff for sensitivity analysis function:
-iteraate through
+iterate through
  - daily age- and sex-specific survival rates (DONE)
  - h
  - k 
@@ -71,6 +71,15 @@ iteraate through
  - egg_S
  - imm_N
  - HSR
+ 
+ ------------------------
+ Aug 1, 2021
+To-do:
+ Last attempt at the annual time-step model!!
+ - estimate sex specific monthly survival of adults from breeding season observations
+  - transform to annual rate
+  - add to matrix
+  - re-run ASR model
 
 
 
