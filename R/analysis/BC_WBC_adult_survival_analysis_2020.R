@@ -21,6 +21,22 @@ head(dat)
 str(dat)
 
 
+
+read_xlsx("data/raw/All_coucal_waypoints_2001_2019_20200202.xlsx", na = "NA", col_types = "text") %>%
+  dplyr::select(species, ring_ID, sex, year) %>% 
+  # dplyr::rename(ring_ID = Alu) %>% 
+  # remove all white space from data
+  mutate(ring_ID = as.factor(str_remove_all(ring_ID, fixed(" "))),
+         species = as.factor(str_remove_all(species, fixed(" "))),
+         sex = as.factor(str_remove_all(sex, fixed(" "))),
+         year = as.factor(str_remove_all(year, fixed(" ")))) %>% 
+  distinct() %>% 
+  filter(ring_ID %in% c("GN41752", "GN55932", "GN76761", "GN76762"))
+  group_by(species, ring_ID, sex) %>% 
+  dplyr::summarise(n_years = n_distinct(year)) %>% 
+  filter(species == "BC") %>% 
+  arrange(desc(n_years))
+  
 #-----------------------------------------------
 #cbind the variables of interest in this analysis
 #-----------------------------------------------

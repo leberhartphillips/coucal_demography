@@ -57,7 +57,8 @@ WBC_sex_diff_hazard_output <-
 sex_diff_survival_output <- 
   dplyr::bind_rows(BC_sex_diff_hazard_output,
                    WBC_sex_diff_hazard_output) %>% 
-  dplyr::filter(stage != "h" | stage != "ISR") %>% 
+  dplyr::filter(stage %in% c("HSR", "Nestling", "Groundling", 
+                             "Fledgling", "Adult")) %>% 
   mutate(stage = factor(stage, 
                         levels = c("HSR", "Nestling", "Groundling", 
                                    "Fledgling", "Adult")),
@@ -286,12 +287,12 @@ background <-
 #                               "Fledgling" = expression(S["f"]),
 #                               "Adult" = expression(phi["ad"])))
 
-# jpeg(filename = "products/figures/demographic_differences_plot.jpeg",
-#      # compression = "none",
-#      width = 4.75,
-#      height = 2,
-#      units = "in",
-#      res = 600)
+jpeg(filename = "products/figures/demographic_differences_plot.jpeg",
+     # compression = "none",
+     width = 4.75,
+     height = 2,
+     units = "in",
+     res = 600)
 
 grid.newpage()
 grid::pushViewport( grid::viewport(
@@ -300,4 +301,4 @@ print(background, newpage = FALSE)
 print(surv_diff_plot, newpage = FALSE)
 # print(HSR_plot, newpage = FALSE)
 grid::popViewport()
-# dev.off()
+dev.off()

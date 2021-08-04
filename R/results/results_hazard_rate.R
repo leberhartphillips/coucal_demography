@@ -14,33 +14,33 @@ data.sources = list.files(path = "data/cooked",
                           ignore.case = TRUE)
 sapply(data.sources, load, .GlobalEnv)
 
-# load output
-BC_hazard_rate_boot <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_one.rds")
+# # load output
+# BC_hazard_rate_boot <- 
+#   readRDS("output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_one.rds")
+# 
+# # load output
+# WBC_hazard_rate_boot <- 
+#   readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
+# 
+# # clean up the output from the bootstrap procedure and save as rds
+# BC_hazard_rate_boot_tidy <- 
+#   hazard_boot_out_wrangle(species = "BC", niter = 1000, 
+#                           output_dir = "output/bootstraps/hazard/cooked/",
+#                           rds_file = "_hazard_ASR_bootstrap_result_one")
+# 
+# # clean up the output from the bootstrap procedure and save as rds
+# WBC_hazard_rate_boot_tidy <- 
+#   hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
+#                           output_dir = "output/bootstraps/hazard/cooked/",
+#                           rds_file = "_hazard_ASR_bootstrap_result_one")
 
 # load output
-WBC_hazard_rate_boot <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_one.rds")
-
-# clean up the output from the bootstrap procedure and save as rds
 BC_hazard_rate_boot_tidy <- 
-  hazard_boot_out_wrangle(species = "BC", niter = 1000, 
-                          output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_one")
-
-# clean up the output from the bootstrap procedure and save as rds
-WBC_hazard_rate_boot_tidy <- 
-  hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
-                          output_dir = "output/bootstraps/hazard/cooked/",
-                          rds_file = "_hazard_ASR_bootstrap_result_one")
-
-# load output
-BC_hazard_rate_boot_tidy <- 
-  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("output/bootstraps/hazard/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans_no_imm.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <- 
-  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc_no_imm.rds")
 
 flight_dat <- 
   data.frame(species = c("BC","WBC"),
@@ -59,7 +59,7 @@ filter(BC_hazard_rate_boot_tidy$hazard_rates_boot, age == 0) %>%
 filter(WBC_hazard_rate_boot_tidy$hazard_rates_boot, age == 12) %>% 
   ggplot() +
   geom_histogram(aes(fit), binwidth = 0.001) +
-  facet_grid(sex~ .)
+  facet_grid(sex ~ .)
 
 # plot each iteration's hazard function
 surv_plot <-
@@ -85,7 +85,7 @@ surv_plot <-
                 group = interaction(iter, sex), 
                 color = sex),
             alpha = 0.04) +
-  scale_colour_manual(values = rev(plot_palette_sex)) +
+  scale_colour_manual(values = rev(sex_pal)) +
   ylab("Estimated daily survival rate") +
   xlab("Age (Days since hatching)") + 
   scale_y_continuous(limits = c(0.9, 1),
@@ -130,9 +130,9 @@ sex_diff_background <-
                 group = iter), color = "black",
             alpha = 0.05) +
   annotate("rect", ymin = 0, ymax = 0.125, xmin = 0, xmax = 70, alpha = 0.6,
-           fill= brewer.pal(8, "Dark2")[c(1)]) +
+           fill= brewer.pal(8, "Set1")[c(2)]) +
   annotate("rect", ymin = -0.125, ymax = 0, xmin = 0, xmax = 70, alpha = 0.6,
-           fill= brewer.pal(8, "Dark2")[c(2)]) +
+           fill= brewer.pal(8, "Set1")[c(1)]) +
   annotate("text", x = c(1), y = c(0.05),
            label = c("\u2642"), size = 4, colour = "grey10",
            family="Menlo",
@@ -169,6 +169,8 @@ sex_diff_background <-
   annotate(geom = "text", y = -0.115, x = (70 - 36)/2 + 36,
            label = "fledgling",
            color = "black", size = 3, fontface = 'italic', hjust = 0.5)
+
+CI = 0.95
 
 sex_diff_foreground <- 
   WBC_hazard_rate_boot_tidy$hazard_rates_boot %>% 

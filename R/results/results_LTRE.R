@@ -72,13 +72,13 @@ LTRE_ASR_plot_background <-
         plot.margin = unit(c(0.2, 0.85, #0.78, 
                              1.15, 0.6), "cm")) +
   
-  # scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
-  #                             "Nestling survival" = expression(italic(S["n"])),
-  #                             "Groundling survival" = expression(italic(S["g"])),
-  #                             "Fledgling survival" = expression(italic(S["f"])),
-  #                             "Adult survival" = expression(italic(phi["ad"])),
-  #                             "Mating system" = expression(italic("h")),
-  #                             "Immigrant sex ratio" = "ISR")) +
+  scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
+                              "Nestling survival" = expression(italic(S["n"])),
+                              "Groundling survival" = expression(italic(S["g"])),
+                              "Fledgling survival" = expression(italic(S["f"])),
+                              "Adult survival" = expression(italic(phi["ad"])),
+                              "Mating system" = expression(italic("h")),
+                              "Immigrant sex ratio" = "ISR")) +
   scale_y_continuous(limits = c(-0.15 ,0.15), expand = c(0, 0),
                      breaks = seq(from = -0.15, to = 0.15, by = 0.03)) +
   ylab("Absolute contribution to adult sex ratio bias") +
@@ -110,29 +110,29 @@ LTRE_ASR_plot <-
   scale_y_continuous(limits = c(-0.15 ,0.15), expand = c(0, 0),
                      breaks = seq(from = -0.150, to = 0.150, by = 0.03)) +
   
-  # scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
-  #                             "Nestling survival" = expression(italic(S["n"])),
-  #                             "Groundling survival" = expression(italic(S["g"])),
-  #                             "Fledgling survival" = expression(italic(S["f"])),
-  #                             "Adult survival" = expression(italic(phi["ad"])),
-  #                             "Mating system" = expression(italic("h")),
-  #                             "Immigrant sex ratio" = "ISR")) +
+  scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
+                              "Nestling survival" = expression(italic(S["n"])),
+                              "Groundling survival" = expression(italic(S["g"])),
+                              "Fledgling survival" = expression(italic(S["f"])),
+                              "Adult survival" = expression(italic(phi["ad"])),
+                              "Mating system" = expression(italic("h")),
+                              "Immigrant sex ratio" = "ISR")) +
   ylab("Absolute contribution to adult sex ratio bias") +
   xlab("Sex bias in parameter")
 
-# jpeg(filename = "products/figures/LTRE_ASR_plot.jpeg",
-#      # compression = "none",
-#      width = 4.75,
-#      height = 3,
-#      units = "in",
-#      res = 600)
+jpeg(filename = "products/figures/LTRE_ASR_plot.jpeg",
+     # compression = "none",
+     width = 4.75,
+     height = 3,
+     units = "in",
+     res = 600)
 
 grid.newpage()
 pushViewport( viewport( layout = grid.layout( 1 , 1 , widths = unit( 1 , "npc" ) ) ) )
 print(LTRE_ASR_plot_background, newpage = FALSE)
 print(LTRE_ASR_plot, newpage = FALSE)
 grid::popViewport()
-# dev.off()
+dev.off()
 
 # Determine how much larger the contribution of each vital rates is compared to juvenile survival
 # groundling vs nestling:

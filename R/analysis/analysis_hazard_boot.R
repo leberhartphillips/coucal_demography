@@ -45,32 +45,20 @@ WBC_all_dat <-
   filter(species == "WBC")
 
 # load WBC bootstrapped sex specific adult survival estimates
-load("../coucal_ASR/coucal_ASR/output/wrangled/White-browed_Coucal_bootstrap_result_clean.rds")
+WBC_boot_out <- 
+  readRDS(file = "output/wrangled/WBC_adult_survival_CJS_bootstrap_tidy.rds")
 
-WBC_adult_surival_boot_out <- 
-  WBC_boot_out$survival_rates_boot %>% 
-  filter(stage == "adult" & rate == "survival")
+WBC_adult_surival_boot_out <-
+  WBC_boot_out$adult_reals_survival_rates_boot
 
-# transform WBC to sex-specific rates that reflect the ~0.7 ASR that is observed annually
-trans_WBC_adult_surival_boot_out <- 
-  WBC_boot_out$survival_rates_boot %>% 
-  filter(stage == "adult" & rate == "survival") %>% 
-  mutate(value = ifelse(sex == "Female", value * 0.6, value * 1.4))
-                        
-# WBC_adult_surival_boot_out %>% 
-#   group_by(sex) %>%
-#   dplyr::summarise(mean_value = mean(value)) %>% 
-#   pivot_wider(names_from = sex, values_from = mean_value) %>% 
-#   # mutate(Female = Female * 0.6,
-#   #        Male = Male * 1.4) %>% 
-#   mutate(ratio = Male / (Female + Male))
-# 
-# WBC_adult_surival_boot_out %>% 
-#   group_by(sex) %>%
-#   dplyr::summarise(mean_value = mean(value))
+# transform WBC to sex-specific rates that reflect the ~0.7 ASR that is observed 
+# annually (i.e., the immigration sex ratio calculation)
+trans_WBC_adult_surival_boot_out <-
+  WBC_boot_out$adult_reals_survival_rates_boot %>% 
+  mutate(value = ifelse(sex == "Female", estimate * 0.6, estimate * 1.4))
 
 #### Black Coucals ----
-niter = 1000
+niter = 10000
 set.seed(14)
 
 k_dist_BC = c(pull(filter(coucal_clutch_size, species == "BC"), mean), 
@@ -100,15 +88,15 @@ flight_age_distF_BC = c(pull(filter(coucal_flight_age, species == "BC" & sex == 
 flight_age_distM_BC = c(pull(filter(coucal_flight_age, species == "BC" & sex == "M"), mean), 
                         pull(filter(coucal_flight_age, species == "BC" & sex == "M"), sd))
 
-BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc <-
+BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc_no_imm <-
   pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
            offspring = BC_all_dat,
            adult_surival_boot_out = trans_WBC_adult_surival_boot_out,
            immigrant_pop_size = 0,
-           bootstrap_name = "BC_boot_w_WBC_ad_surv_stoc",
+           bootstrap_name = "BC_boot_w_trans_WBC_ad_surv_stoc_no_imm",
            species = "BC",
            iter_add = 1,
-           prefix_number = "boot_w_WBC_ad_surv_stoc",
+           prefix_number = "boot_w_trans_WBC_ad_surv_stoc_no_imm",
            max_time = 70,
            niter = niter,
            alpha_value = 1.4,
@@ -121,54 +109,9 @@ BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc <-
            fledge_age_distM = fledge_age_distM_BC,
            flight_age_distF = flight_age_distF_BC,
            flight_age_distM = flight_age_distM_BC)
-
-BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
-  pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
-           offspring = BC_all_dat,
-           adult_surival_boot_out = WBC_adult_surival_boot_out,
-           immigrant_pop_size = 100,
-           bootstrap_name = "BC_boot_w_WBC_ad_surv_stoc",
-           species = "BC",
-           iter_add = 1,
-           prefix_number = "boot_w_WBC_ad_surv_stoc",
-           max_time = 70,
-           niter = niter,
-           alpha_value = 1.4,
-           k_dist = k_dist_BC,
-           HSR_dist = HSR_dist_BC,
-           h_dist = h_dist_BC,
-           egg_surv_dist = egg_surv_dist_BC,
-           ISR_dist = ISR_dist_BC,
-           fledge_age_distF = fledge_age_distF_BC,
-           fledge_age_distM = fledge_age_distM_BC,
-           flight_age_distF = flight_age_distF_BC,
-           flight_age_distM = flight_age_distM_BC)
-
-BC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_5050_ISR <-
-  pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
-           offspring = BC_all_dat,
-           adult_surival_boot_out = WBC_adult_surival_boot_out,
-           immigrant_pop_size = 100,
-           bootstrap_name = "BC_boot_w_WBC_ad_surv_stoc_50_ISR",
-           species = "BC",
-           iter_add = 1,
-           prefix_number = "boot_w_WBC_ad_surv_stoc_50_ISR",
-           max_time = 70,
-           niter = niter,
-           alpha_value = 1.4,
-           k_dist = k_dist_BC,
-           HSR_dist = HSR_dist_BC,
-           h_dist = h_dist_BC,
-           egg_surv_dist = egg_surv_dist_BC,
-           ISR_dist = c(0.5, 0),
-           fledge_age_distF = fledge_age_distF_BC,
-           fledge_age_distM = fledge_age_distM_BC,
-           flight_age_distF = flight_age_distF_BC,
-           flight_age_distM = flight_age_distM_BC)
-
 
 #### White-browed Coucals ----
-niter = 1000
+niter = 10000
 set.seed(14)
 
 k_dist_WBC = c(pull(filter(coucal_clutch_size, species == "WBC"), mean), 
@@ -198,15 +141,15 @@ flight_age_distF_WBC = c(pull(filter(coucal_flight_age, species == "WBC" & sex =
 flight_age_distM_WBC = c(pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), mean), 
                          pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), sd))
 
-WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
+WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_no_imm <-
   pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
            offspring = WBC_all_dat,
            adult_surival_boot_out = WBC_adult_surival_boot_out,
            immigrant_pop_size = 0,
-           bootstrap_name = "WBC_boot_w_WBC_ad_surv_stoc",
+           bootstrap_name = "WBC_boot_w_WBC_ad_surv_stoc_no_imm",
            species = "WBC",
            iter_add = 1,
-           prefix_number = "boot_w_WBC_ad_surv_stoc", 
+           prefix_number = "boot_w_WBC_ad_surv_stoc_no_imm", 
            max_time = 70,
            niter = niter,
            alpha_value = 1.4,
@@ -222,20 +165,20 @@ WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
 
 #### save and wrangle bootstrap results ----
 # save model output
-saveRDS(object = BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc, 
+saveRDS(object = BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc_no_imm, 
         file = "output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc_no_imm.rds")
 
-saveRDS(object = WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc, 
+saveRDS(object = WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_no_imm, 
         file = "output/bootstraps/hazard/cooked/WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_no_imm.rds")
 
 # clean up the output from the bootstrap procedure and save as rds
 BC_hazard_rate_boot_tidy_trans_no_imm <- 
-  hazard_boot_out_wrangle(species = "BC", niter = 1000, 
+  hazard_boot_out_wrangle(species = "BC", niter = 10000, 
                           output_dir = "output/bootstraps/hazard/cooked/",
                           rds_file = "_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc_no_imm")
 
 WBC_hazard_rate_boot_tidy_no_imm <- 
-  hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
+  hazard_boot_out_wrangle(species = "WBC", niter = 10000, 
                           output_dir = "output/bootstraps/hazard/cooked/",
                           rds_file = "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc_no_imm")
 
@@ -245,30 +188,3 @@ saveRDS(object = BC_hazard_rate_boot_tidy_trans_no_imm,
 
 saveRDS(object = WBC_hazard_rate_boot_tidy_no_imm, 
         file = "output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc_no_imm.rds")
-
-#### Bootstrap run ----
-niter = 1000
-set.seed(14)
-
-# run bootstrap procedure on Black Coucals
-BC_hazard_ASR_bootstrap_result_50_ISR <-
-  pbsapply(1:niter, run_bootstrap_hazard_ASR,
-           offspring = BC_all_dat,
-           k = 4,
-           HSR = 0.4955,
-           h = 1/2.9,
-           egg_survival = 0.32,
-           adult_survival_rate = 0.3,
-           ISR = 0.5,
-           immigrant_pop_size = 100,
-           fledge_age = 15,
-           flight_age = 36,
-           bootstrap_name = "BC_boot_test",
-           species = "BC",
-           iter_add = 1,
-           prefix_number = "boot_test_",
-           max_time = 70)
-
-# save model output
-saveRDS(object = BC_hazard_ASR_bootstrap_result_50_ISR, 
-        file = "output/bootstraps/hazard/cooked/BC_hazard_ASR_bootstrap_result_50_ISR.rds")

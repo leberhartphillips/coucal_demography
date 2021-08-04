@@ -32,6 +32,11 @@ BC_detect_dat_A <-
   detect_dat %>% 
   filter(age_status == "A" & species == "BC")
 
+BC_detect_dat_A %>% 
+  group_by(ring_ID) %>% 
+  dplyr::summarise(n_years = n_distinct(year)) %>% 
+  arrange(desc(n_years))
+
 # use the BaSTA function "CensusToCaptHist()" function to convert long format
 # encounter histories of each individual, to wide format with 1's and 0's for 
 # each year of encounter
@@ -40,12 +45,12 @@ BC_detect_dat_A_ch <-
                    d = BC_detect_dat_A$year) %>% 
   mutate(ring_ID = rownames(.),
          ID = as.character(ID)) %>% 
-  left_join(., select(BC_detect_dat_A, ring_ID, sex, year), by = "ring_ID") %>% 
+  left_join(., dplyr::select(BC_detect_dat_A, ring_ID, sex, year), by = "ring_ID") %>% 
   distinct()
 
 Black_Coucal_adult_CJS_ch <- 
   data.frame(ch = apply(BC_detect_dat_A_ch[, 2:19 ] , 1, paste, collapse = "")) %>% 
-  bind_cols(., select(BC_detect_dat_A_ch, sex, ring_ID)) %>% 
+  bind_cols(., dplyr::select(BC_detect_dat_A_ch, sex, ring_ID)) %>% 
   mutate(across(everything(), ~str_trim(.x))) %>% 
   mutate(across(everything(), ~str_replace_all(.x, fixed(" "), ""))) %>% 
   mutate(across(everything(), ~gsub("^$|^ $", NA, .x))) %>% 

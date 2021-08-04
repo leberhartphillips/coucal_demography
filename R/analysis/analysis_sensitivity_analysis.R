@@ -304,6 +304,24 @@ saveRDS(object = WBC_Mprime_sensitivity_analysis_male,
 saveRDS(object = WBC_Mprime_sensitivity_analysis_female, 
         file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds")
 
+BC_treat_sensitivity_analysis <- 
+  readRDS(file = "output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds")
+
+BC_Mprime_sensitivity_analysis_male <- 
+  readRDS(file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR.rds")
+
+BC_Mprime_sensitivity_analysis_female <- 
+  readRDS(file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR.rds")
+
+WBC_treat_sensitivity_analysis <- 
+  readRDS(file = "output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds")
+
+WBC_Mprime_sensitivity_analysis_male <- 
+  readRDS(file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_ASR.rds")
+
+WBC_Mprime_sensitivity_analysis_female <- 
+  readRDS(file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds")
+
 # ```
 #conduct the LTRE comparing the two matrices
 # ```{r}
