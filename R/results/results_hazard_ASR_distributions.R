@@ -67,14 +67,14 @@ ASR_boot_summary <-
 
 Figure_2b <- 
   ggplot() +
-  annotate("rect", xmin=0, xmax=0.5, ymin=0, ymax=200, alpha=0.6,
-           fill= brewer.pal(8, "Set1")[c(1)]) +
-  annotate("rect", xmin=0.5, xmax=1, ymin=0, ymax=200, alpha=0.6,
-           fill= brewer.pal(8, "Set1")[c(2)]) +
-  annotate("text", x = c(0.025), y = c(100),
+  annotate("rect", xmin=0, xmax=0.5, ymin=0, ymax=600, alpha=0.7,
+           fill= pull(ggthemes_data$wsj$palettes$colors6[3,2])) +
+  annotate("rect", xmin=0.5, xmax=1, ymin=0, ymax=600, alpha=0.7,
+           fill= pull(ggthemes_data$wsj$palettes$colors6[2,2])) +
+  annotate("text", x = c(0.025), y = c(300),
            label = c("\u2640"), size = 4, colour = "grey10",
            family="Menlo", vjust = c(0), hjust = c(0.5)) +
-  annotate("text", x = c(0.975), y = c(100),
+  annotate("text", x = c(0.975), y = c(300),
            label = c("\u2642"), size = 4, colour = "grey10",
            family="Menlo", vjust = c(1), hjust = c(0.5)) +
   #   annotate("text", x = c(0.2), y = c(80),
@@ -83,8 +83,8 @@ Figure_2b <-
   # annotate("text", x = c(0.8), y = c(80),
   #          label = c("male"), size = 2,
   #          vjust = c(1), hjust = c(0.5)) +
-  geom_histogram(binwidth = 0.02, data = ASR_boot, aes(x = M_Adult), fill = "grey30") +
-  geom_errorbarh(data = ASR_boot_summary, aes(y = 180, x = lcl_ASR, xmin = lcl_ASR, xmax = ucl_ASR), 
+  geom_histogram(binwidth = 0.01, data = ASR_boot, aes(x = M_Adult), fill = "grey30") +
+  geom_errorbarh(data = ASR_boot_summary, aes(y = 575, x = lcl_ASR, xmin = lcl_ASR, xmax = ucl_ASR), 
                  color = "black", size = 0.3, linetype = "solid") +
   coord_flip() +
   facet_grid(. ~ species) +
@@ -112,9 +112,10 @@ Figure_2b <-
   xlab("Adult sex ratio\n(proportion \u2642, 95% CI)") +
   # xlab("Adult sex ratio\n(proportion male)") +
   scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(0, 200), expand = c(0, 0), breaks=c(0, 50, 100, 150, 200))
+  scale_y_continuous(limits = c(0, 600), expand = c(0, 0), breaks = seq(from = 0, to = 500, 100))
 
-Figure_2b
+# check colorblindness issues with colors
+cvdPlot(Figure_2b)
 
 ggsave(Figure_2b,
        filename = "products/figures/ASR_plot.jpeg",

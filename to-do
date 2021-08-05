@@ -73,13 +73,14 @@ iterate through
  - HSR
  
  ------------------------
- Aug 1, 2021
+ Aug 5, 2021
 To-do:
- Last attempt at the annual time-step model!!
- - estimate sex specific monthly survival of adults from breeding season observations
-  - transform to annual rate
-  - add to matrix
-  - re-run ASR model
+- Make figs:
+  1) life-cycle (done)
+  2) sex-specific hazard functions with variation in fledge and flight age (done)
+  3) sex-differences plot
+  4) ASR plot
+  5) 
 
 
 

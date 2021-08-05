@@ -49,13 +49,15 @@ WBC_boot_out <-
   readRDS(file = "output/wrangled/WBC_adult_survival_CJS_bootstrap_tidy.rds")
 
 WBC_adult_surival_boot_out <-
-  WBC_boot_out$adult_reals_survival_rates_boot
+  WBC_boot_out$adult_reals_survival_rates_boot %>% 
+  dplyr::rename(value = estimate)
 
 # transform WBC to sex-specific rates that reflect the ~0.7 ASR that is observed 
 # annually (i.e., the immigration sex ratio calculation)
 trans_WBC_adult_surival_boot_out <-
   WBC_boot_out$adult_reals_survival_rates_boot %>% 
-  mutate(value = ifelse(sex == "Female", estimate * 0.6, estimate * 1.4))
+  dplyr::rename(value = estimate) %>% 
+  mutate(value = ifelse(sex == "Female", value * 0.6, value * 1.4))
 
 #### Black Coucals ----
 niter = 10000
