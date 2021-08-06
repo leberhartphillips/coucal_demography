@@ -19,6 +19,7 @@
 !R/analysis/analysis_sensitivity_analysis_JSR.R
 !R/analysis/analysis_JSR_bootstrap.R
 !R/analysis/analysis_WBC_adult_survival_bootstrap.R
+!R/analysis/analysis_age_distribution_plumage.R
 
 # functions
 !R/functions/function_run_bootstrap_juv_hazd_ad_surv_ASR().R
