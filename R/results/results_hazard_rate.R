@@ -46,15 +46,6 @@ BC_hazard_rate_boot_tidy <-
 WBC_hazard_rate_boot_tidy <-
   readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc_no_imm.rds")
 
-sex_pal2 <- 
-  c(pull(ggthemes_data$wsj$palettes$colors6[3,2]), 
-    pull(ggthemes_data$wsj$palettes$colors6[2,2]))
-sex_pal3 <- 
-  c(pull(ggthemes_data$wsj$palettes$colors6[3,2]), 
-    pull(ggthemes_data$wsj$palettes$colors6[3,2]),
-    pull(ggthemes_data$wsj$palettes$colors6[2,2]),
-    pull(ggthemes_data$wsj$palettes$colors6[2,2]))
-
 flight_dat <-
   bind_rows(coucal_fledge_age, coucal_flight_age) %>% 
   dplyr::select(trait, species, sex, mean) %>% 

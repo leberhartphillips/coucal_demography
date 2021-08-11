@@ -30,6 +30,14 @@ extrafont::fonttable()
 extrafont::loadfonts() # load these into R
 
 # set plotting color palettes
+sex_pal2 <- 
+  c(pull(ggthemes_data$wsj$palettes$colors6[3,2]), 
+    pull(ggthemes_data$wsj$palettes$colors6[2,2]))
+sex_pal3 <- 
+  c(pull(ggthemes_data$wsj$palettes$colors6[3,2]), 
+    pull(ggthemes_data$wsj$palettes$colors6[3,2]),
+    pull(ggthemes_data$wsj$palettes$colors6[2,2]),
+    pull(ggthemes_data$wsj$palettes$colors6[2,2]))
 plot_palette_sex <- RColorBrewer::brewer.pal(8, "Dark2")[c(2,1)]
 plot_palette_species <- RColorBrewer::brewer.pal(8, "Dark2")[c(3,7)]
 # plot_palette_nest_order <- c("black", "#f03b20")

@@ -8,7 +8,7 @@ function.sources = list.files(path = "R/functions",
                               ignore.case = TRUE)
 try (sapply(function.sources, source), silent = TRUE)
 
-age_plumage_dist_data <-
+# age_plumage_dist_data <-
   read_xlsx("data/raw/age_classes_2001-2020_2.xlsx", na = "NA", col_types = "text") %>%
   dplyr::rename_all(~str_replace_all(., "\\s+", "")) %>%
   dplyr::mutate(species = tolower(species)) %>%
@@ -33,11 +33,11 @@ age_plumage_dist_data <-
                                    str_detect(secondaries, "barred"), 1,
                                  
                                  ifelse(str_detect(primaries, "barred") | 
-                                        str_detect(secondaries, "barred"), 1,
+                                        str_detect(secondaries, "barred"), 2,
                                         
-                                        ifelse((str_detect(primarycoverts, "barred") | 
+                                        ifelse((str_detect(primarycoverts, "barred") |
                                                str_detect(Secondarycoverts, "barred")) &
-                                               (str_detect(primaries, "rufous") | 
+                                               (str_detect(primaries, "rufous") |
                                                str_detect(secondaries, "rufous")), 2,
                                                
                                                ifelse(str_detect(primarycoverts, "rufous") & 
@@ -45,10 +45,11 @@ age_plumage_dist_data <-
                                                          str_detect(Secondarycoverts, "rufous") & 
                                                          str_detect(secondaries, "rufous"), 3, 0))))) %>%
   dplyr::mutate(age = ifelse(age == "juvenile", 1, age)) %>%
+  dplyr::mutate(CHECK = ifelse(age != age_LEP, "CHECK", "")) %>% 
   # dplyr::filter(age != age_LEP) %>%
   # dplyr::select(SN, year, species, Alu, sex, date, primarycoverts, primaries,
-  #               Secondarycoverts, secondaries, tail, legcoverts, face, age, age_LEP) %>%
-  # write.csv(file = "data/raw/age_classes_2001-2020_LEP2.csv")
+  #               Secondarycoverts, secondaries, tail, legcoverts, face, age, age_LEP) #%>%
+  write.csv(file = "data/raw/age_classes_2001-2020_LEP3.csv")
   # View()
   dplyr::mutate(age_LEP = age) %>% 
   dplyr::filter(!is.na(age_LEP)) %>% 
