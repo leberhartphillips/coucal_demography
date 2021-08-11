@@ -15,6 +15,7 @@ library(standardize)
 library(colorBlindness)
 library(ggthemes)
 library(patchwork)
+library(gt)
 
 # if(!require(devtools)) install.packages("devtools")
 library("devtools")

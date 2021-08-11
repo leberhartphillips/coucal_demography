@@ -10,7 +10,7 @@ try (sapply(function.sources, source), silent = TRUE)
 
 age_plumage_dist_data <-
   read_xlsx("data/raw/age_classes_2001-2020_2.xlsx", na = "NA", col_types = "text") %>%
-  dplyr::rename_all(~str_replace_all(., "\\s+", "")) %>% 
+  dplyr::rename_all(~str_replace_all(., "\\s+", "")) %>%
   dplyr::mutate(species = tolower(species)) %>%
   dplyr::filter(str_detect(string = species, pattern = "black")) %>% 
   dplyr::mutate(month = str_sub(`date(yymmdd)`, start = 5, end = 6),
@@ -22,7 +22,11 @@ age_plumage_dist_data <-
   dplyr::mutate(species = "BC",
                 sex = ifelse(sex == "female", "F", ifelse(sex == "male", "M", "XXX"))) %>% 
   dplyr::mutate(dplyr::across(.cols = dplyr::everything(), 
-                              str_replace_all, pattern = fixed("onebarred"), replacement = fixed("barred"))) %>% 
+                              str_replace_all, pattern = fixed("onebarred"), replacement = fixed("barred"))) %>%
+    
+  dplyr::mutate(Secondarycoverts = ifelse(SN == "462", "rufous", Secondarycoverts)) %>% 
+  dplyr::mutate(Secondarycoverts = ifelse(SN == "409", "barred", Secondarycoverts)) %>% 
+    
   dplyr::mutate(age_LEP = ifelse(str_detect(primarycoverts, "barred") & 
                                    str_detect(primaries, "barred") & 
                                    str_detect(Secondarycoverts, "barred") & 
@@ -41,7 +45,7 @@ age_plumage_dist_data <-
                                                          str_detect(Secondarycoverts, "rufous") & 
                                                          str_detect(secondaries, "rufous"), 3, 0))))) %>%
   dplyr::mutate(age = ifelse(age == "juvenile", 1, age)) %>%
-  # dplyr::filter(age != age_LEP) %>% 
+  # dplyr::filter(age != age_LEP) %>%
   # dplyr::select(SN, year, species, Alu, sex, date, primarycoverts, primaries,
   #               Secondarycoverts, secondaries, tail, legcoverts, face, age, age_LEP) %>%
   # write.csv(file = "data/raw/age_classes_2001-2020_LEP2.csv")
