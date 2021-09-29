@@ -33,21 +33,44 @@ egg_data <-
 egg_HSR_data <- 
   egg_data %>% 
   dplyr::filter(n_eggs == (male_eggs + female_eggs + unknown_eggs)) %>% 
-  dplyr::filter(unknown_eggs == 0)
+  dplyr::filter(unknown_eggs == 0) %>% 
+  mutate(HSR = male_eggs/(male_eggs + female_eggs + unknown_eggs)) %>%
+  mutate(species_plot = ifelse(species == "WBC", 2.2, 0.8),
+         species_plot2 = ifelse(species == "WBC", 2, 1))
 
-BC_HSR <- 
+egg_HSR_data %>% 
+  dplyr::group_by(species) %>% 
+  dplyr::summarise(n_distinct(nest_ID))
+
+mod_HSR_BC <- 
   lme4::glmer(cbind(male_eggs, female_eggs) ~ 
                 1 + 
                 (1| nest_ID), 
               data = filter(egg_HSR_data, species == "BC"), 
               family = binomial)
 
-WBC_HSR <- 
+mod_HSR_WBC <- 
   lme4::glmer(cbind(male_eggs, female_eggs) ~ 
                 1 + 
                 (1| nest_ID), 
               data = filter(egg_HSR_data, species == "WBC"), 
               family = binomial)
+
+# extract model coefficients
+mod_HSR_BC_coefs <- 
+  model_parameters(mod_HSR_BC) %>%
+  as.data.frame(.)
+
+mod_HSR_WBC_coefs <- 
+  model_parameters(mod_HSR_WBC) %>%
+  as.data.frame(.)
+
+# # run tidy bootstrap to obtain model diagnostics
+# tidy_mod_HSR_BC <-
+#   tidy(mod_HSR_BC, conf.int = TRUE, conf.method = "boot", nsim = 1000)
+# 
+# tidy_mod_HSR_WBC <-
+#   tidy(mod_HSR_WBC, conf.int = TRUE, conf.method = "boot", nsim = 1000)
 
 coucal_HSR <- 
   data.frame(trait = "hatching_sex_ratio",
@@ -72,6 +95,58 @@ coucal_HSR <-
                            pull(n_nests))) %>% 
   mutate(sd = ifelse(!is.na(CI_low), 
                          approx_sd(x1 = CI_low, x2 = CI_high),
-                         CI_low))
+                         CI_low),
+         species_plot = ifelse(species == "WBC", 1.8, 1.2))
+
+# HSR_plot <-
+#   ggplot2::ggplot() + 
+#   geom_boxplot(data = egg_HSR_data,
+#                aes(x = species_plot, y = HSR,
+#                    group = species, fill = species),
+#                color = "grey50",
+#                width = 0.05, alpha = 0.5,
+#                position = position_dodge(width = 0)) +
+#   geom_errorbar(data = coucal_HSR, 
+#                 aes(x = species_plot, ymax = CI_high, ymin = CI_low),
+#                 alpha = 1, color = "black", width = 0.05, lwd = 0.5) + 
+#   geom_point(data = coucal_HSR, 
+#              aes(x = species_plot, y = mean, fill = species),
+#              lwd = 3, shape = 21, color= "black") +
+#   geom_jitter(data = egg_HSR_data, 
+#               aes(x = species_plot2, y = HSR, 
+#                   group = species, 
+#                   fill = species, color = species), 
+#               width = 0.02, alpha = 0.2, shape = 19) +
+#   # coord_flip() +
+#   luke_theme +
+#   theme(legend.position = "none",
+#         panel.border = element_blank(),
+#         strip.background = element_blank(),
+#         # strip.text = element_text(size = 12, face = "italic"),
+#         axis.title.x = element_blank(),
+#         axis.text.x = element_text(12),
+#         # axis.title.y = element_blank(),
+#         # axis.text.y = element_blank(),
+#         # axis.ticks.x = element_blank(),
+#         # axis.ticks.y = element_blank(),
+#         legend.background = element_blank(),
+#         # panel.grid = element_blank(),
+#         panel.grid.major.y = element_line(colour = "grey70", size = 0.1),
+#         plot.title = element_text(hjust = 0.5, face = "italic")) +
+#   scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.25)) +
+#   scale_x_discrete(labels = c("1" = "Black Coucal",
+#                               "2" = "White-browed Coucal")) +
+#   ylab(expression(paste("Hatching sex ratio (prop. male)" %+-%  "95% CI", sep = ""))) +
+#   xlab("Species") +
+#   scale_color_manual(values = c(brewer.pal(6, "Dark2")[1], brewer.pal(6, "Set1")[1])) +
+#   scale_fill_manual(values = c(brewer.pal(6, "Dark2")[1], brewer.pal(6, "Set1")[1])) +
+#   ggtitle("Black Coucal           White-browed\n                                Coucal")
+# 
+# HSR_plot
+# 
+# ggsave(plot = HSR_plot,
+#        filename = "products/figures/jpg/HSR_plot.jpg",
+#        width = 4,
+#        height = 4, units = "in")
 
 rm(egg_data, egg_HSR_data, BC_HSR, WBC_HSR)

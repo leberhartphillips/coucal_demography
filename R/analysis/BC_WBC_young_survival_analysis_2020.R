@@ -114,11 +114,11 @@ ranef(cox.WBC) # random effects coefficients
 vcov(cox.WBC)  # fixed efects variance matrix
 VarCorr(cox.WBC) # random effects parameters (theta)
 
-cox.CTC # print(cox.CTC)
-fixef(cox.CTC) # fixed efects coefficients
-ranef(cox.CTC) # random effects coefficients
-vcov(cox.CTC)  # fixed efects variance matrix
-VarCorr(cox.CTC) # random effects parameters (theta)
+# cox.CTC # print(cox.CTC)
+# fixef(cox.CTC) # fixed efects coefficients
+# ranef(cox.CTC) # random effects coefficients
+# vcov(cox.CTC)  # fixed efects variance matrix
+# VarCorr(cox.CTC) # random effects parameters (theta)
 
 #--------------------------------------------------------------
 ######### create a survival object by sexes in BC
@@ -229,26 +229,34 @@ ggsurvplot(bcfit.by.sex,
            conf.int = TRUE) #  plot the survival## ok
 
 
+sex_pal2
 
-BC_plot1 <- ggsurvplot(bcfit.by.sex,     # survfit object with calculated statistics.
-                       risk.table = F,  # "abs_pct"show number and percent of the individuals at at risk
-                       ncensor.plot = F,
-                       pval = TRUE,  # show p-value of log-rank test.
-                       pval.coord = c(50, 0.1),
-                       pval.size = 7, # numeric value specifying the p-value text size. Default is 5.
-                       pval.method = TRUE,
-                       pval.method.coord = c(50, 0.175),
-                       pval.method.size = 7,
-                       conf.int = T,  # show confidence intervals for point estimaes of survival curves.
-                       ylab = "Cumulative Survival",
-                       xlab = "Age (Days since hatching)",
-                       xlim = c(0,70),    # present narrower X axis, but not affect survival estimates.
-                       break.time.by = 10, 
-                       legend =  c(0.4, 0.2), # legend = "top", # legend =  c(x, y)
-                       font.legend = c(20, "plain", "black"),
-                       legend.title = " ", # "Sex",
-                       legend.labs = c("Female (N = 66)", "Male     (N = 59)")) 
+BC_plot1 <- 
+  ggsurvplot(bcfit.by.sex,     # survfit object with calculated statistics.
+             risk.table = F,  # "abs_pct"show number and percent of the individuals at at risk
+             ncensor.plot = F,
+             # pval = TRUE,  # show p-value of log-rank test.
+             # pval.coord = c(50, 0.1),
+             # pval.size = 7, # numeric value specifying the p-value text size. Default is 5.
+             # pval.method = TRUE,
+             # pval.method.coord = c(50, 0.175),
+             # pval.method.size = 7,
+             conf.int = T,  # show confidence intervals for point estimaes of survival curves.
+             ylab = "Cumulative Survival",
+             xlab = "Age (Days since hatching)",
+             xlim = c(0,70),    # present narrower X axis, but not affect survival estimates.
+             break.time.by = 10,
+             palette = sex_pal2,
+             ggtheme = luke_theme + theme(plot.title = element_text(hjust = 0.5, face = "italic"),
+                                          legend.background = element_rect(fill="transparent")),
+             legend =  c(0.7, 0.9), # legend = "top", # legend =  c(x, y)
+             font.legend = c(10, "plain", "black"),
+             legend.title = "", # "Sex",
+             legend.labs = c("Female", "Male"),
+             title = "Black Coucal")
 BC_plot1
+
+
 ggsave(BC_plot1$plot,
        filename = "products/figures/BC_cumulative_survival.jpeg",
        # compression = "none",

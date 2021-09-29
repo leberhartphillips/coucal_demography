@@ -27,6 +27,16 @@ pc <- read.table("literature/from_Brett/enchist.txt",header=T,sep=",")
 pc.pre <- subset(pc, trt=="pre") # subset data
 pc.post <- subset(pc, trt=="post")
 
+dat_BC <- 
+  read.csv("data/raw/Coucal_chick_survival_2001-2019_20200129.csv", header = TRUE) %>% 
+  filter(species == "BC") %>% 
+  mutate(entry = 0)
+
+dat_WBC <- 
+  read.csv("data/raw/Coucal_chick_survival_2001-2019_20200129.csv", header = TRUE) %>% 
+  filter(species == "WBC") %>% 
+  mutate(entry = 0)
+
 # look at data
 # name = bird band number plus radio frequency, year = year of study (1-5)
 # trt = pre/post-construction, entry and exit = week of study period
@@ -40,23 +50,54 @@ mfit <- survfit(Surv(pc$entry, pc$exit, pc$event) ~ pc$trt )
 print(survfit(Surv(pc$entry, pc$exit, pc$event) ~ pc$trt), print.rmean=TRUE)
 summary(mfit)
 
+mfitBC <- survfit(Surv(time = dat_BC$entry, time2 = dat_BC$ageC, event = dat_BC$statusC) ~ dat_BC$sex)
+print(survfit(Surv(time = dat_BC$entry, time2 = dat_BC$ageC, event = dat_BC$statusC) ~ dat_BC$sex), print.rmean=TRUE)
+summary(mfitBC)
+
+mfitWBC <- survfit(Surv(time = dat_WBC$entry, time2 = dat_WBC$ageC, event = dat_WBC$statusC) ~ dat_WBC$sex)
+print(survfit(Surv(time = dat_WBC$entry, time2 = dat_WBC$ageC, event = dat_WBC$statusC) ~ dat_WBC$sex), print.rmean=TRUE)
+summary(mfitWBC)
+
 # Plot the Kaplan-Meier cumulative survival
 # xaxs, yaxs=i gets rid of rabbit holes at corner of graphs
 plot(mfit, conf.int=T, lty=c(1,2,2), col=c("dark green", "red"), xaxs="i", yaxs="i", xlim=c(0, 53), lwd=2.5, xlab=c("week"), ylab=c("survival function"))
 legend("topright", legend = c("Post", "Pre"), cex=2, lty=1, col=c("dark green", "red"), lwd=2.5, bty="n")
 
+plot(mfitBC, conf.int=T, lty=c(1,2,2), col=c("dark green", "red"), xaxs="i", yaxs="i", xlim=c(0, 53), lwd=2.5, xlab=c("week"), ylab=c("survival function"))
+legend("topright", legend = c("Female", "Male"), cex=2, lty=1, col=c("dark green", "red"), lwd=2.5, bty="n")
+
+plot(mfitWBC, conf.int=T, lty=c(1,2,2), col=c("dark green", "red"), xaxs="i", yaxs="i", xlim=c(0, 53), lwd=2.5, xlab=c("week"), ylab=c("survival function"))
+legend("topright", legend = c("Female", "Male"), cex=2, lty=1, col=c("dark green", "red"), lwd=2.5, bty="n")
+
+
 # Cox proportional hazards
 # test of interactive model for treatment period, distance to turbine
 # cluster is a random effects for individual bird, robust se in output are adjusted values
-trt.prepost <- coxph(Surv(pc$entry, pc$exit, pc$event)~ pc$trt + pc$dturb + cluster(pc$name))	 # Interactive model 
+trt.prepost <- coxph(Surv(pc$entry, pc$exit, pc$event)~ pc$trt + pc$dturb + cluster(pc$name))	 # Interactive model
 summary(trt.prepost)		    # Summary of the model			
 cox.zph(trt.prepost)              # Model diagnostic; testing the proportional hazard assumption (see "?cox.zph")		
 windows()
 plot(cox.zph(trt.prepost, transform="identity"))   # Plotting the model diagnostics, identity puts time on same scale as KM plots
 
+trt.sex <- coxph(Surv(time = dat_BC$entry, time2 = dat_BC$ageC, event = dat_BC$statusC) ~ dat_BC$sex + dat_WBC$Relative_hatch_order + cluster(dat_BC$nest_ID))	 # Interactive model 
+summary(trt.sex)		    # Summary of the model			
+cox.zph(trt.sex)              # Model diagnostic; testing the proportional hazard assumption (see "?cox.zph")		
+windows()
+plot(cox.zph(trt.sex, transform="identity"))   # Plotting the model diagnostics, identity puts time on same scale as KM plots
+
+trt.sex_WBC <- coxph(Surv(time = dat_WBC$entry, time2 = dat_WBC$ageC, event = dat_WBC$statusC) ~ dat_WBC$sex + dat_WBC$Relative_hatch_order + cluster(dat_WBC$nest_ID))	 # Interactive model 
+summary(trt.sex_WBC)		    # Summary of the model			
+cox.zph(trt.sex_WBC)              # Model diagnostic; testing the proportional hazard assumption (see "?cox.zph")		
+windows()
+plot(cox.zph(trt.sex_WBC, transform="identity"))   # Plotting the model diagnostics, identity puts time on same scale as KM plots
+
+
 # test of main effects models for treatment period, distance to turbine, cluster is a random effects for individual bird
 trt.prepost <- coxph(Surv(pc$entry, pc$exit, pc$event)~ pc$trt + pc$dturb + cluster(pc$name))	 # Additive model 
 summary(trt.prepost)		    # Summary of the model			
+
+trt.sex <- coxph(Surv(time = dat_BC$entry, time2 = dat_BC$ageC, event = dat_BC$statusC) ~ dat_BC$sex + cluster(dat_BC$nest_ID))	 # Additive model 
+summary(trt.sex)		
 
 # Pooling across both periods
 #mfit <- survfit(Surv(pc$entry, pc$exit, pc$event) ~ 1)

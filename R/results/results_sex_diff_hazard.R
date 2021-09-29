@@ -45,12 +45,12 @@ WBC_hazard_rate_boot_tidy <-
 # calculate the sex differences in stage specific rates
 BC_sex_diff_hazard_output <- 
   sex_diff_hazard(boot_out_list = BC_hazard_rate_boot_tidy, 
-                  niter = 1000) %>% 
+                  niter = 10000) %>% 
   mutate(species = "BC")
 
 WBC_sex_diff_hazard_output <- 
   sex_diff_hazard(boot_out_list = WBC_hazard_rate_boot_tidy, 
-                  niter = 1000) %>% 
+                  niter = 10000) %>% 
   mutate(species = "WBC")
 
 # consolidate results
@@ -63,7 +63,8 @@ sex_diff_survival_output <-
                         levels = c("HSR", "Nestling", "Groundling", 
                                    "Fledgling", "Adult")),
          species = factor(species, 
-                          levels = c("BC", "WBC")))
+                          levels = c("BC", "WBC")),
+         difference = -difference)
 
 sex_diff_survival_output %>% 
   filter(difference < -1 & difference > 1)
@@ -169,7 +170,8 @@ theme_set(vital_rate_theme)
 
 surv_diff_plot <-
   ggplot(aes(y = difference, x = stage, fill = stage), 
-         data = sex_diff_survival_output) +
+         data = #slice(group_by(sex_diff_survival_output, species, stage), 1:1000)) +
+  slice_sample(group_by(sex_diff_survival_output, species, stage), n = 1000)) +
   geom_violin(draw_quantiles = c(0.025, 0.5, 0.975), color = "grey10",
               scale = "width", trim = TRUE, adjust = 1, size = 0.25) +
   # geom_jitter()+#draw_quantiles = c(0.025, 0.5, 0.975), 
@@ -177,44 +179,51 @@ surv_diff_plot <-
   # coord_flip() +
   facet_grid(. ~ species, labeller = as_labeller(species_names)) +
   theme(axis.title.x = element_text(size = 7, colour = "black"),
-        axis.text.x  = element_text(size = 8, angle = 45, hjust = 1, 
+        axis.text.x  = element_text(size = 6, angle = 45, hjust = 1, vjust = 1, 
                                     colour = "black"),
-        axis.ticks.x = element_blank(),
+        axis.ticks.x = element_line(size = 0.2),
         axis.title.y = element_text(size = 7, hjust = 0.5, vjust = -3),
         axis.text.y  = element_text(size = 6, colour = "black"),
         axis.ticks.y = element_line(size = 0.2),
         # panel.border = element_rect(colour = "red"),
-        plot.margin = unit(c(0.2, 0.39, 0.405, 1.55), "cm"),
-        strip.text = element_text(size = 6, colour = "black")
+        # plot.margin = unit(c(0.2, 0.39, 0.405, 1.55), "cm"),
+        plot.margin = unit(c(0.2, 1.35, 0.42, 0.3), "cm"),
+        strip.text = element_text(size = 6, colour = "black", face = "italic")
   ) +
   scale_fill_manual(values = cbPalette) +
   # scale_color_manual(values = cbPalette) +
   scale_y_continuous(limits = c(-0.65, 0.65), 
                      breaks = c(-0.5, -0.25, 0, 0.25, 0.5), 
-                     expand = c(0, 0), position = "right",
+                     expand = c(0, 0), position = "left",
                      labels = c("-0.50","-0.25", 
                                 expression(phantom("-")*"0.00"), 
                                 expression(phantom("-")*"0.25"),
                                 expression(phantom("-")*"0.50"))) +
   xlab("Life stage") +
-  ylab("Sex bias") +
+  ylab("Sex bias\n") +
   scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
-                              "HSR" = expression(italic("\u03C1")),
-                              "Nestling" = expression(S["n"]),
-                              "Groundling" = expression(S["g"]),
-                              "Fledgling" = expression(S["f"]),
-                              "Adult" = expression(phi["ad"])))
+    "HSR" = "hatching\nsex ratio",
+    "Nestling" = "nestling\nsurvival",
+    "Groundling" = "groundling\nsurvival",
+    "Fledgling" = "fledgling\nsurvival",
+    "Adult" = "adult\nsurvival"))
+  # scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
+  #                             "HSR" = expression(italic("\u03C1")),
+  #                             "Nestling" = expression(S["n"]),
+  #                             "Groundling" = expression(S["g"]),
+  #                             "Fledgling" = expression(S["f"]),
+  #                             "Adult" = expression(phi["ad"])))
 
 background <-
   ggplot(aes(y = difference, x = stage, fill = stage),
          data = sex_diff_survival_output) +
   # coord_flip() +
   annotate("rect", xmin = -Inf, xmax = Inf, 
-           ymin = -Inf, ymax = 0, alpha = 0.6,
-           fill = brewer.pal(8, "Set1")[c(1)]) +
+           ymin = -Inf, ymax = 0, alpha = 0.7,
+           fill = pull(ggthemes_data$wsj$palettes$colors6[3,2])) +
   annotate("rect", xmin = -Inf, xmax = Inf, 
-           ymin = 0, ymax = Inf, alpha = 0.6,
-           fill = brewer.pal(8, "Set1")[c(2)]) +
+           ymin = 0, ymax = Inf, alpha = 0.7,
+           fill = pull(ggthemes_data$wsj$palettes$colors6[2,2])) +
   annotate("text", x = c(5), y = c(-0.5),
            label = c("\u2640"), size = 4,
            family = "Menlo",
@@ -231,7 +240,7 @@ background <-
   #          vjust = c(1), hjust = c(0.5)) +
   facet_grid(. ~ species, labeller = as_labeller(species_names)) +
   theme(axis.title.x = element_text(size = 7, colour = "white"),
-        axis.text.x  = element_text(size = 8, angle = 45, hjust = 0.9, 
+        axis.text.x  = element_text(size = 6, angle = 45, hjust = 1, 
                                     vjust = 1, colour = "white"),
         axis.ticks.x = element_line(size = 0.2, colour = "white"),
         axis.title.y = element_text(size = 7, hjust = 0.5, vjust = -1, 
@@ -239,17 +248,30 @@ background <-
         axis.text.y  = element_text(size = 6, colour = "white"),
         axis.ticks.y = element_line(size = 0.2, colour = "white"),
         # panel.border = element_rect(colour = "black"),
-        plot.margin = unit(c(0.2, 1.35, 1.05, 0.65), "cm"),
+        plot.margin = unit(c(0.2, 1.35, 1.55, 0.3), "cm"),
         strip.text = element_text(size = 6, colour = "white")
   ) +
   scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
-                              "HSR" = expression(italic("\u03C1")),
-                              "Nestling" = expression(S["n"]),
-                              "Groundling" = expression(S["g"]),
-                              "Fledgling" = expression(S["f"]),
-                              "Adult" = expression(phi["ad"]))) +
-  scale_y_continuous(limits = c(-0.65, 0.65), expand = c(0, 0)) +
-  xlab("Life stage") #+
+    "HSR" = "hatching\nsex ratio",
+    "Nestling" = "nestling\nsurvival",
+    "Groundling" = "groundling\nsurvival",
+    "Fledgling" = "fledgling\nsurvival",
+    "Adult" = "adult\nsurvival")) +
+  # scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
+  #                             "HSR" = expression(italic("\u03C1")),
+  #                             "Nestling" = expression(S["n"]),
+  #                             "Groundling" = expression(S["g"]),
+  #                             "Fledgling" = expression(S["f"]),
+  #                             "Adult" = expression(phi["ad"]))) +
+  scale_y_continuous(limits = c(-0.65, 0.65), 
+                     breaks = c(-0.5, -0.25, 0, 0.25, 0.5), 
+                     expand = c(0, 0), position = "left",
+                     labels = c("-0.50","-0.25", 
+                                expression(phantom("-")*"0.00"), 
+                                expression(phantom("-")*"0.25"),
+                                expression(phantom("-")*"0.50"))) +
+  xlab("Life stage") +
+  ylab("Sex bias\n") #+
   # ylab(expression(paste("Hatching sex ratio\n(",italic("\u03C1"),", 95% CI)"), 
   #                 sep = ""))
 
@@ -287,7 +309,7 @@ background <-
 #                               "Fledgling" = expression(S["f"]),
 #                               "Adult" = expression(phi["ad"])))
 
-jpeg(filename = "products/figures/demographic_differences_plot.jpeg",
+jpeg(filename = "products/figures/jpg/demographic_differences_plot.jpeg",
      # compression = "none",
      width = 4.75,
      height = 2,

@@ -24,13 +24,13 @@ mating_dat <-
   #        Fledged_status, postf_age, postf_status, ageC, lay_date, hatch_order) %>% 
   
   # remove all white space from data
-  mutate(across(everything(), ~str_trim(~.x))) %>% 
+  # mutate(across(everything(), ~str_trim(~.x))) %>%
   # mutate(across(where(is.character), str_remove_all, pattern = fixed(" ")))
-  mutate(across(.cols = everything(), 
-                .fns = str_replace_all(
-                  string = ..1, 
-                  pattern = " ", 
-                  replacement = ""))) %>% 
+  # mutate(across(.cols = everything(), 
+  #               .fns = str_replace_all(
+  #                 string = ..1, 
+  #                 pattern = " ", 
+  #                 replacement = ""))) %>% 
 
   # specify empty data as NA
   mutate(across(everything(), ~gsub("^$|^ $", NA, .x))) %>% 
@@ -146,11 +146,28 @@ sex_specific_mating_system <-
                    var_annual_no_mates = var(Nr_partners, na.rm = TRUE),
                    median_annual_no_mates = median(Nr_partners, na.rm = TRUE),
                    sd_annual_no_mates = sd(Nr_partners, na.rm = TRUE),
-                   n = n_distinct(ind_ID), .groups = "drop") %>% 
+                   n = n_distinct(ind_ID), .groups = "drop",
+                   n_years = n_distinct(year)) %>% 
   mutate(sample_size = paste("n = ", n, sep = ""),
          species_plot = ifelse(species == "WBC", 1.9, 1.1),
          species_lab = ifelse(species == "WBC", 1, 2))
 
+
+sex_specific_mating_system <- 
+  mating_dat %>% 
+  group_by(ind_ID, sex, species) %>% 
+  dplyr::summarise(mean_annual_no_mates_ind = mean(Nr_partners, na.rm = TRUE),
+                   n_years = n_distinct(year)) %>% 
+  mutate(mu_i = ifelse(mean_annual_no_mates_ind <= 1, 1, mean_annual_no_mates_ind)) %>% 
+  group_by(species, sex) %>% 
+  dplyr::summarise(mean_annual_no_mates = mean(mu_i, na.rm = TRUE),
+                   var_annual_no_mates = var(mu_i, na.rm = TRUE),
+                   median_annual_no_mates = median(mu_i, na.rm = TRUE),
+                   sd_annual_no_mates = sd(mu_i, na.rm = TRUE),
+                   n = n_distinct(ind_ID), .groups = "drop") %>% 
+  mutate(sample_size = paste("n = ", n, sep = ""),
+         species_plot = ifelse(species == "WBC", 1.9, 1.1),
+         species_lab = ifelse(species == "WBC", 1, 2))
 # To obtain a female-based h index for each population the inverse of the mean 
 # mu is calculated (i.e., Eq. 5)
 BC_h <- 

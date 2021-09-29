@@ -103,7 +103,7 @@ Figure_2b <-
         axis.ticks.length = unit(0.1, "cm"),
         axis.ticks.x = element_line(size = 0.2, colour = "grey40"),
         panel.border = element_blank(),
-        plot.margin = unit(c(0.2, 1.35, 0.405, 0.08), "cm"),
+        plot.margin = unit(c(0.2, 1.35, 0.405, 0.1), "cm"),
         panel.spacing = unit(0.3, "lines"),
         strip.background = element_blank(),
         # strip.text = element_text(size=11)) +
@@ -118,7 +118,7 @@ Figure_2b <-
 cvdPlot(Figure_2b)
 
 ggsave(Figure_2b,
-       filename = "products/figures/ASR_plot.jpeg",
+       filename = "products/figures/jpg/ASR_plot.jpeg",
        width = 4.75,
        height = 1.59, units = "in",
        dpi = 600,

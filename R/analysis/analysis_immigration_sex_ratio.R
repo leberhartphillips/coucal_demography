@@ -46,7 +46,7 @@ mating_dat <-
 
 coucal_ISR <- 
   mating_dat %>% 
-  filter((sex == "female" | (sex == "male" & `ID_partner.s.` == "unringedf"))  & site == "kapunga") %>% 
+  filter((sex == "female" | (sex == "male" & `ID_partner.s.` == "unringedf")) & site == "kapunga") %>% 
   group_by(species, year, sex) %>% 
   dplyr::summarise(n_partners = sum(Nr_partners),
                    n_focals = n_distinct(ind_ID),

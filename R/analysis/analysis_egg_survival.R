@@ -37,6 +37,11 @@ egg_surv_data <-
                 n_alive_eggs = n_chicks) %>% 
   arrange(nest_ID)
 
+#### sample size summary ----
+egg_surv_data %>% 
+  dplyr::group_by(species) %>% 
+  dplyr::summarise(n_nests = n_distinct(nest_ID))
+
 BC_egg_survival <- 
   lme4::glmer(cbind(n_alive_eggs, n_dead_eggs) ~ 
                 1 + 

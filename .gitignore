@@ -14,8 +14,8 @@
 !R/analysis/analysis_hatching_sex_ratio.R
 !R/analysis/analysis_immigration_sex_ratio.R
 !R/analysis/analysis_mating_system.R
-!R/analysis/analysis_fledging_age.R
-!R/analysis/analysis_flight_age.R
+!R/analysis/analysis_fledge_age.R
+!R/analysis/analysis_age_first_flight_age.R
 !R/analysis/analysis_sensitivity_analysis_JSR.R
 !R/analysis/analysis_JSR_bootstrap.R
 !R/analysis/analysis_WBC_adult_survival_bootstrap.R
@@ -40,6 +40,10 @@
 !R/results/results_hazard_ASR_distributions.R
 !R/results/results_sex_diff_hazard.R
 !R/results/results_hazard_rate.R
+
+# tables and figures
+!products/figures/jpg
+!products/tables/png
 
 # playground
 !R/junkyard/sensitivity_JSR_workflow.R

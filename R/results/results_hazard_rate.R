@@ -46,22 +46,22 @@ BC_hazard_rate_boot_tidy <-
 WBC_hazard_rate_boot_tidy <-
   readRDS("output/bootstraps/hazard/cooked/WBC_haz_sur_ASR_boot_tidy_stoc_no_imm.rds")
 
-flight_dat <-
-  bind_rows(coucal_fledge_age, coucal_flight_age) %>% 
-  dplyr::select(trait, species, sex, mean) %>% 
-  pivot_wider(names_from = trait, values+)
-  group_by(species, sex) %>% 
-  mutate(mean = ifelse(trait == "flight_age", )) %>% 
-  mutate(mean = round(mean))
+# flight_dat <-
+#   bind_rows(coucal_fledge_age, coucal_flight_age) %>% 
+#   dplyr::select(trait, species, sex, mean) %>% 
+#   pivot_wider(names_from = trait, values+)
+#   group_by(species, sex) %>% 
+#   mutate(mean = ifelse(trait == "flight_age", )) %>% 
+#   mutate(mean = round(mean))
   
-flight_dat <- 
-  data.frame(species = c("BC","WBC"),
-             end_nestling = c(13, 14),
-             end_nestling_lower = c(12, 13),
-             end_nestling_upper = c(13, 15),
-             end_groundling = c(36, 32),
-             end_groundling_lower = c(34, 29),
-             end_groundling_upper = c(38, 35))
+# flight_dat <- 
+#   data.frame(species = c("BC","WBC"),
+#              end_nestling = c(13, 14),
+#              end_nestling_lower = c(12, 13),
+#              end_nestling_upper = c(13, 15),
+#              end_groundling = c(36, 32),
+#              end_groundling_lower = c(34, 29),
+#              end_groundling_upper = c(38, 35))
 
 grp_means <- 
   bind_rows(BC_hazard_rate_boot_tidy$vital_rate_ests_boot,
@@ -74,7 +74,7 @@ grp_means <-
   group_by(species, stage_sex, sex, stage) %>% 
   dplyr::summarise(grp.mean = mean(value))
 
-BC_density_plot <- 
+BC_density_plotA <- 
   bind_rows(BC_hazard_rate_boot_tidy$vital_rate_ests_boot,
           WBC_hazard_rate_boot_tidy$vital_rate_ests_boot) %>% 
   filter(rate == "development" & species == "BC") %>% 
@@ -84,13 +84,35 @@ BC_density_plot <-
   mutate(stage_sex = paste(sex, stage, sep = "_")) %>% 
   ggplot() +
   geom_density(aes(value, y=..scaled.., fill = fct_rev(stage_sex)),
-               alpha = 0.7, color = "grey40") + 
+               alpha = 0.7, color = "grey40", size = 0.3) + 
   theme_void() +
   theme(legend.position = "none",
-        plot.margin = unit(c(0,0,0,0), "cm")) +
+        plot.margin = unit(c(0,0,0,0.5), "cm"),
+        plot.background = element_rect(fill = 'transparent', color = NA)) +
   scale_fill_manual(values = rev(sex_pal3)) +
   scale_x_continuous(limits = c(0, 70),
-                     expand = c(0.01, 0.01))
+                     expand = c(0.01, 0.01)) + 
+  ggtitle('A')
+
+BC_density_plotB <- 
+  bind_rows(BC_hazard_rate_boot_tidy$vital_rate_ests_boot,
+            WBC_hazard_rate_boot_tidy$vital_rate_ests_boot) %>% 
+  filter(rate == "development" & species == "BC") %>% 
+  pivot_wider(names_from = stage, values_from = value) %>% 
+  mutate(flight_age = fledge_age + flight_age) %>% 
+  pivot_longer(c(fledge_age, flight_age), names_to = "stage", values_to = "value") %>% 
+  mutate(stage_sex = paste(sex, stage, sep = "_")) %>% 
+  ggplot() +
+  geom_density(aes(value, y=..scaled.., fill = fct_rev(stage_sex)),
+               alpha = 0.7, color = "grey40", size = 0.3) + 
+  theme_void() +
+  theme(legend.position = "none",
+        plot.margin = unit(c(0,0,0,0.5), "cm"),
+        plot.background = element_rect(fill = 'transparent', color = NA)) +
+  scale_fill_manual(values = rev(sex_pal3)) +
+  scale_x_continuous(limits = c(0, 70),
+                     expand = c(0.01, 0.01)) + 
+  ggtitle('B')
 
 WBC_density_plot <-
   bind_rows(BC_hazard_rate_boot_tidy$vital_rate_ests_boot,
@@ -102,13 +124,26 @@ WBC_density_plot <-
   mutate(stage_sex = paste(sex, stage, sep = "_")) %>% 
   ggplot() +
   geom_density(aes(value, y=..scaled.., fill = fct_rev(stage_sex)),
-               alpha = 0.7, color = "grey40") + 
+               alpha = 0.7, color = "grey40", size = 0.3) + 
   theme_void() +
   theme(legend.position = "none",
-        plot.margin = unit(c(0,0,0,0), "cm")) +
+        plot.margin = unit(c(0,0,0,0.5), "cm"),
+        plot.background = element_rect(fill = 'transparent', color = NA)) +
   scale_fill_manual(values = rev(sex_pal3)) +
   scale_x_continuous(limits = c(0, 70),
-                     expand = c(0.01, 0.01))
+                     expand = c(0.01, 0.03))
+
+age_means_BC <- 
+  BC_hazard_rate_boot_tidy$hazard_rates_boot %>%
+  filter(iter %in% c(as.character(seq(from = 1, to = 1000, by = 1)))) %>% 
+  dplyr::group_by(age, sex) %>% 
+  dplyr::summarise(mean_rate = mean(estimate, na.rm = TRUE))
+
+age_means_WBC <- 
+  WBC_hazard_rate_boot_tidy$hazard_rates_boot %>%
+  filter(iter %in% c(as.character(seq(from = 1, to = 1000, by = 1)))) %>% 
+  dplyr::group_by(age, sex) %>% 
+  dplyr::summarise(mean_rate = mean(estimate, na.rm = TRUE))
 
 BC_surv_plot <-
   ggplot() +
@@ -119,17 +154,27 @@ BC_surv_plot <-
         axis.text.x = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        plot.margin = unit(c(0,0,0.5,0), "cm")) +
+        plot.margin = unit(c(0,0,0.5,0.5), "cm"),
+        axis.ticks = element_line(size = 0.25, colour = "grey40"),
+        axis.ticks.length = unit(0.1, "cm"),
+        axis.text.y  = element_text(size = 8),
+        panel.grid.major.x = element_line(colour = "grey70", size = 0.1),
+        plot.background = element_rect(fill = 'transparent', color = NA)) +
   geom_vline(data = filter(grp_means, species == "BC" & stage == "fledge_age"),
              aes(xintercept = grp.mean, color = sex), linetype = "dashed", alpha = 1) +
   geom_vline(data = filter(grp_means, species == "BC" & stage == "flight_age"),
              aes(xintercept = grp.mean, color = sex), linetype = "dashed", alpha = 1) +
   geom_line(data = filter(BC_hazard_rate_boot_tidy$hazard_rates_boot, 
-                          iter %in% c(as.character(seq(from = 1, to = 500, by = 1)))),
+                          iter %in% c(as.character(seq(from = 1, to = 1000, by = 1)))),
             aes(x = age, y = estimate, 
                 group = interaction(iter, sex), 
                 color = sex),
-            alpha = 0.05) +
+            alpha = 0.05, size = 0.25) +
+  geom_line(data = age_means_BC,
+            aes(x = age, y = mean_rate, 
+                group = sex), 
+            color = c(rep("#00496C", 70), rep("#E5BD3A", 70)),
+            alpha = 1) +
   facet_grid(species ~ ., labeller = as_labeller(species_names)) +
   scale_colour_manual(values = sex_pal2) +
   ylab("Estimated daily survival rate") +
@@ -168,20 +213,31 @@ WBC_surv_plot <-
   theme(legend.position = "none",
         strip.background = element_blank(),
         strip.text = element_text(size = 12, face = "italic"),
-        plot.margin = unit(c(0,0,0.5,0), "cm")) +
+        plot.margin = unit(c(0,0,0.5,0.5), "cm"),
+        axis.ticks = element_line(size = 0.25, colour = "grey40"),
+        axis.ticks.length = unit(0.1, "cm"),
+        axis.text.x  = element_text(size = 8),
+        axis.text.y  = element_text(size = 8),
+        panel.grid.major.x = element_line(colour = "grey70", size = 0.1),
+        plot.background = element_rect(fill = 'transparent', color = NA)) +
   geom_vline(data = filter(grp_means, species == "WBC" & stage == "fledge_age"),
              aes(xintercept = grp.mean, color = sex), linetype = "dashed", alpha = 1) +
   geom_vline(data = filter(grp_means, species == "WBC" & stage == "flight_age"),
              aes(xintercept = grp.mean, color = sex), linetype = "dashed", alpha = 1) +
   geom_line(data = filter(WBC_hazard_rate_boot_tidy$hazard_rates_boot, 
-                          iter %in% c(as.character(seq(from = 1, to = 500, by = 1)))),
+                          iter %in% c(as.character(seq(from = 1, to = 1000, by = 1)))),
             aes(x = age, y = estimate, 
                 group = interaction(iter, sex), 
                 color = sex),
-            alpha = 0.05) +
+            alpha = 0.05, size = 0.25) +
+  geom_line(data = age_means_WBC,
+            aes(x = age, y = mean_rate, 
+                group = sex), 
+                color = c(rep("#00496C", 70), rep("#E5BD3A", 70)),
+            alpha = 1) +
   facet_grid(species ~ ., labeller = as_labeller(species_names)) +
   scale_colour_manual(values = sex_pal2) +
-  ylab("                                                         Estimated daily survival rate") +
+  ylab("                                                Estimated daily survival rate") +
   xlab("Age (days since hatching)") + 
   scale_y_continuous(limits = c(0.9, 1),
                      breaks = seq(from = 0.9, to = 1, by = 0.025)) +
@@ -210,16 +266,146 @@ WBC_surv_plot <-
                            pull(filter(grp_means, species == "WBC" & stage == "flight_age")[2,5], grp.mean))))/2),
            label = "fledgling",
            color = "black", size = 3, fontface = 'italic', hjust = 0.5)
+
+BC_plot1 <- 
+  BC_plot$plot +
+  geom_vline(data = filter(grp_means, species == "BC" & stage == "fledge_age"),
+             aes(xintercept = grp.mean, color = sex), linetype = "dashed", alpha = 1, color = c("#be9c2e", "#016392")) +
+  geom_vline(data = filter(grp_means, species == "BC" & stage == "flight_age"),
+             aes(xintercept = grp.mean, color = sex), linetype = "dashed", alpha = 1, color = c("#be9c2e", "#016392")) +
+  luke_theme +
+  theme(legend.position = c(0.8, 0.8),
+        plot.margin = unit(c(0,0,0.5,0), "cm"),
+        legend.text=element_text(size = 10),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.3, 'cm'),
+        # panel.border = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 12, face = "italic"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        # axis.ticks.y = element_blank(),
+        axis.ticks = element_line(size = 0.25, colour = "grey40"),
+        axis.ticks.length = unit(0.1, "cm"),
+        axis.text.x  = element_blank(),
+        axis.text.y  = element_text(size = 8),
+        panel.grid.major.x = element_line(colour = "grey70", size = 0.1),
+        # plot.title = element_text(hjust = 0.5, face = "italic"),
+        legend.background = element_rect(fill="transparent"),
+        plot.background = element_rect(fill = 'transparent', color = NA)) +
+  scale_x_continuous(limits = c(0, 70), 
+                     breaks = seq(0, 70, by = 5), 
+                     expand = c(0.01, 0.01),
+                     labels = as.character(seq(0, 70, by = 5))) +#c(-60, -30, 0, 30, 60)) +
+  # ylab(expression(paste("Cumulative survival" %+-%  "95% CI", sep = ""))) +
+  # xlab("Age (Days since hatching)") +
+  scale_color_manual(values = sex_pal2,
+                     labels = c("Female", "Male")) +
+  scale_fill_manual(values = sex_pal2,
+                    labels = c("Female", "Male")) +
+  annotate(geom = "text", y = 0.08, 
+           x = mean(c(pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[1,5], grp.mean),
+                      pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[2,5], grp.mean)))/2,
+           label = "nestling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5) +
+  annotate(geom = "text", y = 0.08, 
+           x = mean(c(pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[1,5], grp.mean),
+                      pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[2,5], grp.mean))) +
+             ((mean(c(pull(filter(grp_means, species == "WBC" & stage == "flight_age")[1,5], grp.mean),
+                      pull(filter(grp_means, species == "WBC" & stage == "flight_age")[2,5], grp.mean))) -
+                 mean(c(pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[1,5], grp.mean),
+                        pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[2,5], grp.mean))))/2),
+           label = "groundling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5) +
+  annotate(geom = "text", y = 0.08, 
+           x = mean(c(pull(filter(grp_means, species == "WBC" & stage == "flight_age")[1,5], grp.mean),
+                      pull(filter(grp_means, species == "WBC" & stage == "flight_age")[2,5], grp.mean))) +
+             ((70 - mean(c(pull(filter(grp_means, species == "WBC" & stage == "flight_age")[1,5], grp.mean), 
+                           pull(filter(grp_means, species == "WBC" & stage == "flight_age")[2,5], grp.mean))))/2),
+           label = "fledgling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5)
+
+WBC_plot1 <- 
+  WBC_plot$plot +
+  geom_vline(data = filter(grp_means, species == "WBC" & stage == "fledge_age"),
+             aes(xintercept = grp.mean, color = sex), linetype = "dashed", alpha = 1, color = c("#be9c2e", "#016392")) +
+  geom_vline(data = filter(grp_means, species == "WBC" & stage == "flight_age"),
+             aes(xintercept = grp.mean, color = sex), linetype = "dashed", alpha = 1, color = c("#be9c2e", "#016392")) +
+  luke_theme +
+  theme(legend.position = "none",
+        plot.margin = unit(c(0,0,0.5,0), "cm"),
+        # panel.border = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 12, face = "italic"),
+        axis.title.x = element_text(size = 12),
+        axis.ticks = element_line(size = 0.25, colour = "grey40"),
+        axis.ticks.length = unit(0.1, "cm"),
+        axis.text.x  = element_text(size = 8),
+        axis.text.y  = element_text(size = 8),
+        # axis.ticks.y = element_blank(),
+        legend.background = element_blank(),
+        panel.grid.major.x = element_line(colour = "grey70", size = 0.1),
+        plot.background = element_rect(fill = 'transparent', color = NA)) +
+        # axis.title.y = element_blank(),
+        # axis.text.y = element_blank()) +
+  scale_x_continuous(limits = c(0, 70), 
+                     breaks = seq(0, 70, by = 5), 
+                     expand = c(0.01, 0.01),
+                     labels = as.character(seq(0, 70, by = 5))) +#c(-60, -30, 0, 30, 60)) +
+  # xlab("Age (Days since hatching)") +
+  scale_color_manual(values = sex_pal2) +
+  scale_fill_manual(values = sex_pal2) +
+  ylab("                                                Cumulative survival ± 95% CI") +
+  xlab("Age (days since hatching)") +
+  annotate(geom = "text", y = 0.08, 
+           x = mean(c(pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[1,5], grp.mean),
+                      pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[2,5], grp.mean)))/2,
+           label = "nestling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5) +
+  annotate(geom = "text", y = 0.08, 
+           x = mean(c(pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[1,5], grp.mean),
+                      pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[2,5], grp.mean))) +
+             ((mean(c(pull(filter(grp_means, species == "WBC" & stage == "flight_age")[1,5], grp.mean),
+                      pull(filter(grp_means, species == "WBC" & stage == "flight_age")[2,5], grp.mean))) -
+                 mean(c(pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[1,5], grp.mean),
+                        pull(filter(grp_means, species == "WBC" & stage == "fledge_age")[2,5], grp.mean))))/2),
+           label = "groundling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5) +
+  annotate(geom = "text", y = 0.08, 
+           x = mean(c(pull(filter(grp_means, species == "WBC" & stage == "flight_age")[1,5], grp.mean),
+                      pull(filter(grp_means, species == "WBC" & stage == "flight_age")[2,5], grp.mean))) +
+             ((70 - mean(c(pull(filter(grp_means, species == "WBC" & stage == "flight_age")[1,5], grp.mean), 
+                           pull(filter(grp_means, species == "WBC" & stage == "flight_age")[2,5], grp.mean))))/2),
+           label = "fledgling",
+           color = "black", size = 3, fontface = 'italic', hjust = 0.5)
   
-coucal_juvenile_plot <-
-  (BC_density_plot / BC_surv_plot / WBC_density_plot / WBC_surv_plot) + 
+
+juvenile_survival_plot <-
+  (BC_density_plotA / BC_plot1 / WBC_density_plot / WBC_plot1) + 
+  plot_layout(heights = unit(c(0.5, 4, 0.5, 4), c('cm', 'cm', 'cm', 'cm')),
+              widths = unit(c(7, 7, 7, 7), c('cm', 'cm', 'cm', 'cm')))
+  # (BC_plot1 / WBC_plot1) +
+  # plot_layout(heights = unit(c(4.5, 4.5), c('cm', 'cm')),
+  #             widths = unit(c(7, 7), c('cm', 'cm')))
+
+juvenile_survival_plot
+
+juvenile_hazard_plot <-
+  (BC_density_plotB / BC_surv_plot / WBC_density_plot / WBC_surv_plot) + 
   plot_layout(heights = unit(c(0.5, 4, 0.5, 4), c('cm', 'cm', 'cm', 'cm')),
               widths = unit(c(7, 7, 7, 7), c('cm', 'cm', 'cm', 'cm')))
 
+juvenile_hazard_plot
+
+coucal_juvenile_plot <- 
+  (juvenile_survival_plot | juvenile_hazard_plot) + 
+  plot_layout(heights = unit(c(9, 9), c('cm', 'cm')),
+              widths = unit(c(7, 7), c('cm', 'cm')))
+  
 ggsave(plot = coucal_juvenile_plot,
-       filename = "products/figures/coucal_juvenile_plot.jpg",
-       width = 7 * 1.4,
-       height = sum(c(0.5, 4, 0.5, 4)) * 1.3, units = "cm", dpi = 600)
+       filename = "products/figures/jpg/coucal_juvenile_plot.jpg",
+       width = 14 * 1.4,
+       height = 9 * 1.3, units = "cm", dpi = 600)
   
 # filter(BC_hazard_rate_boot_tidy$hazard_rates_boot, age == 0) %>% 
 #   ggplot() +
