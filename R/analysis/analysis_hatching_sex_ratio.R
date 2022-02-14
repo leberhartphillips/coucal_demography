@@ -57,13 +57,13 @@ mod_HSR_WBC <-
               family = binomial)
 
 # extract model coefficients
-mod_HSR_BC_coefs <- 
-  model_parameters(mod_HSR_BC) %>%
-  as.data.frame(.)
-
-mod_HSR_WBC_coefs <- 
-  model_parameters(mod_HSR_WBC) %>%
-  as.data.frame(.)
+# mod_HSR_BC_coefs <- 
+#   model_parameters(mod_HSR_BC) %>%
+#   as.data.frame(.)
+# 
+# mod_HSR_WBC_coefs <- 
+#   model_parameters(mod_HSR_WBC) %>%
+#   as.data.frame(.)
 
 # # run tidy bootstrap to obtain model diagnostics
 # tidy_mod_HSR_BC <-
@@ -75,12 +75,12 @@ mod_HSR_WBC_coefs <-
 coucal_HSR <- 
   data.frame(trait = "hatching_sex_ratio",
              species = c("BC", "WBC"),
-             mean = c(invlogit(model_parameters(BC_HSR)$Coefficient),
-                          invlogit(model_parameters(WBC_HSR)$Coefficient)),
-             CI_low = c(invlogit(model_parameters(BC_HSR)$CI_low),
-                        invlogit(model_parameters(WBC_HSR)$CI_low)),
-             CI_high = c(invlogit(model_parameters(BC_HSR)$CI_high),
-                         invlogit(model_parameters(WBC_HSR)$CI_high)),
+             mean = c(invlogit(model_parameters(mod_HSR_BC)$Coefficient)[1],
+                          invlogit(model_parameters(mod_HSR_WBC)$Coefficient)[1]),
+             CI_low = c(invlogit(model_parameters(mod_HSR_BC)$CI_low)[1],
+                        invlogit(model_parameters(mod_HSR_WBC)$CI_low)[1]),
+             CI_high = c(invlogit(model_parameters(mod_HSR_BC)$CI_high)[1],
+                         invlogit(model_parameters(mod_HSR_WBC)$CI_high)[1]),
              n_nests = c(filter(egg_HSR_data, species == "BC") %>% 
                            summarise(n_nests = n_distinct(nest_ID)) %>% 
                            pull(n_nests),
@@ -149,4 +149,4 @@ coucal_HSR <-
 #        width = 4,
 #        height = 4, units = "in")
 
-rm(egg_data, egg_HSR_data, BC_HSR, WBC_HSR)
+rm(egg_data, egg_HSR_data, mod_HSR_BC, mod_HSR_WBC)
