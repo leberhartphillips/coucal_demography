@@ -44,6 +44,18 @@ mod_fledge_age_BC_coefs <-
   model_parameters(mod_fledge_age_BC) %>%
   as.data.frame(.)
 
+#### Modeling (WBC) ----
+# "Fledge_age" as dependent variable, interaction with sex and species
+mod_fledge_age_WBC <- 
+  lmer(Fledge_age ~ sex + 
+         (1 | nest_ID) + (1 | year), 
+       data = filter(fledge_dat, species == "WBC"))
+
+# extract model coefficients
+mod_fledge_age_WBC_coefs <- 
+  model_parameters(mod_fledge_age_WBC) %>%
+  as.data.frame(.)
+
 # plot effect sizes of model
 # plot(allEffects(fledge_age_mod))
 
@@ -52,18 +64,18 @@ coucal_fledge_age <-
   data.frame(trait = c("fledge_age"),
              species = c("BC", "BC", "WBC", "WBC"),
              sex = c("F", "M", "F", "M"),
-             mean = c(fledge_age_mod_coefs[1, c(2)],
-                                   (fledge_age_mod_coefs[1, c(2)] + fledge_age_mod_coefs[2, c(2)]),
-                                   (fledge_age_mod_coefs[1, c(2)] + fledge_age_mod_coefs[3, c(2)]),
-                                   (fledge_age_mod_coefs[1, c(2)] + fledge_age_mod_coefs[3, c(2)] + fledge_age_mod_coefs[4, c(2)] + fledge_age_mod_coefs[2, c(2)])),
-             CI_low = c(fledge_age_mod_coefs[1, c(5)],
-                        (fledge_age_mod_coefs[1, c(5)] + fledge_age_mod_coefs[2, c(5)]),
-                        (fledge_age_mod_coefs[1, c(5)] + fledge_age_mod_coefs[3, c(5)]),
-                        (fledge_age_mod_coefs[1, c(5)] + fledge_age_mod_coefs[3, c(5)] + fledge_age_mod_coefs[4, c(5)] + fledge_age_mod_coefs[2, c(5)])),
-             CI_high = c(fledge_age_mod_coefs[1, c(6)],
-                         (fledge_age_mod_coefs[1, c(6)] + fledge_age_mod_coefs[2, c(6)]),
-                         (fledge_age_mod_coefs[1, c(6)] + fledge_age_mod_coefs[3, c(6)]),
-                         (fledge_age_mod_coefs[1, c(6)] + fledge_age_mod_coefs[3, c(6)] + fledge_age_mod_coefs[4, c(6)] + fledge_age_mod_coefs[2, c(6)])),
+             mean = c(mod_fledge_age_BC_coefs[1, 2], # F BC
+                     (mod_fledge_age_BC_coefs[1, 2] + mod_fledge_age_BC_coefs[2, 2]), # M BC
+                      mod_fledge_age_WBC_coefs[1, 2], # F WBC
+                     (mod_fledge_age_WBC_coefs[1, 2] + mod_fledge_age_WBC_coefs[2, 2])), # M WBC
+             CI_low = c(mod_fledge_age_BC_coefs[1, 5], # F BC
+                        (mod_fledge_age_BC_coefs[1, 5] + mod_fledge_age_BC_coefs[2, 5]), # M BC
+                        mod_fledge_age_WBC_coefs[1, 5], # F WBC
+                        (mod_fledge_age_WBC_coefs[1, 5] + mod_fledge_age_WBC_coefs[2, 5])), # M WBC
+             CI_high = c(mod_fledge_age_BC_coefs[1, 6], # F BC
+                         (mod_fledge_age_BC_coefs[1, 6] + mod_fledge_age_BC_coefs[2, 6]), # M BC
+                         mod_fledge_age_WBC_coefs[1, 6], # F WBC
+                         (mod_fledge_age_WBC_coefs[1, 6] + mod_fledge_age_WBC_coefs[2, 6])), # M WBC
              n_inds = c(filter(fledge_dat, species == "BC" & sex == "F") %>% 
                           summarise(n_ = n_distinct(Ind_ID)) %>% 
                           pull(n_),
