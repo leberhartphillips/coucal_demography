@@ -59,12 +59,12 @@ WBC_egg_survival <-
 coucal_egg_survival <- 
   data.frame(trait = c("egg_survival"),
              species = c("BC", "WBC"),
-             mean = c(invlogit(model_parameters(BC_egg_survival)$Coefficient),
-                      invlogit(model_parameters(WBC_egg_survival)$Coefficient)),
-             CI_low = c(invlogit(model_parameters(BC_egg_survival)$CI_low),
-                        invlogit(model_parameters(WBC_egg_survival)$CI_low)),
-             CI_high = c(invlogit(model_parameters(BC_egg_survival)$CI_high),
-                         invlogit(model_parameters(WBC_egg_survival)$CI_high)),
+             mean = c(invlogit(model_parameters(BC_egg_survival)$Coefficient)[1],
+                      invlogit(model_parameters(WBC_egg_survival)$Coefficient)[1]),
+             CI_low = c(invlogit(model_parameters(BC_egg_survival)$CI_low)[1],
+                        invlogit(model_parameters(WBC_egg_survival)$CI_low)[1]),
+             CI_high = c(invlogit(model_parameters(BC_egg_survival)$CI_high)[1],
+                         invlogit(model_parameters(WBC_egg_survival)$CI_high)[1]),
              n_nests = c(filter(egg_data, species == "BC") %>% 
                            summarise(n_nests = n_distinct(nest_ID)) %>% 
                            pull(n_nests),
