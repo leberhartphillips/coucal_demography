@@ -1,6 +1,6 @@
 ## load (and install if necessary) packages need for project
 
-# a vector of all the packages needed in the project's scipts
+# a vector of all the packages needed in the project
 packages_required_in_project <- c("RMark",
                                   "tidyverse",
                                   "readxl",
@@ -26,7 +26,10 @@ packages_required_in_project <- c("RMark",
                                   "devtools",
                                   "unmarked",
                                   "R2ucare",
-                                  "marked")
+                                  "marked",
+                                  "merTools",
+                                  "bootpredictlme4",
+                                  "extrafont")
 
 # of the required packages, check if some need to be installed
 new.packages <- 
