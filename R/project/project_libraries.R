@@ -1,31 +1,40 @@
-# libraries needed
-library(RMark)
-library(tidyverse)
-library(readxl)
-library(BaSTA)
-library(pbapply)
-library(RColorBrewer)
-library(grid)
-library(Rmisc)
-library(gss)
-library(arm)
-library(partR2)
-library(parameters)
-library(standardize)
-library(colorBlindness)
-library(ggthemes)
-library(patchwork)
-library(gt)
-library(rptR)
-library(tidybayes)
-library(broom.mixed)
-library(effects)
-library(patchwork)
+## load (and install if necessary) packages need for project
 
-# if(!require(devtools)) install.packages("devtools")
-library("devtools")
-# install_github('oliviergimenez/R2ucare')
-# install.packages("unmarked")
-library(R2ucare)
-library(unmarked)
-library(marked)
+# a vector of all the packages needed in the project's scipts
+packages_required_in_project <- c("RMark",
+                                  "tidyverse",
+                                  "readxl",
+                                  "BaSTA",
+                                  "pbapply",
+                                  "RColorBrewer",
+                                  "grid",
+                                  "Rmisc",
+                                  "gss",
+                                  "arm",
+                                  "partR2",
+                                  "parameters",
+                                  "standardize",
+                                  "colorBlindness",
+                                  "ggthemes",
+                                  "patchwork",
+                                  "gt",
+                                  "rptR",
+                                  "tidybayes",
+                                  "broom.mixed",
+                                  "effects",
+                                  "patchwork",
+                                  "devtools",
+                                  "unmarked",
+                                  "R2ucare",
+                                  "marked")
+
+# of the required packages, check if some need to be installed
+new.packages <- 
+  packages_required_in_project[!(packages_required_in_project %in% 
+                                   installed.packages()[,"Package"])]
+
+# install all packages that are not locally available
+if(length(new.packages)) install.packages(new.packages)
+
+# load all the packages into the current R session
+lapply(packages_required_in_project, require, character.only = TRUE)
