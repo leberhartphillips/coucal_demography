@@ -104,12 +104,41 @@ Summary of analytical workflow:
   R/analysis/analysis_age_distribution_plumage.R
   
 
-
-
 - add (mean, sd) of the above traits to the hazard bootstrap
 - re-run completely stochastic model
 - tidy up repo
 - clean up WBC adult CJS scripts (and wrangle)
 
+END OF MIQ STATUS
+- MS: need to finish up the methods for the LTRE and add the results of the matrix model
+      need to add the LTRE results to the main figure
+- R: need to rerun the whole bootstrap with the new flight and fledge ages (i.e., based on the predictions of species-specific models)
+     Tidy up repo
+     
+-----------------------
+Feb 23, 2021
+Summary of analytical workflow:
+1a) scripts to summarise constant rates:
+  R/analysis/analysis_egg_survival.R -- binomial glmer of probability of hatching (N: WBC = 213, BC = 271) (checked 14/2/22)
+  R/analysis/analysis_clutch_size.R -- simple summary of average cluch size (N: WBC = 213, BC = 271) (checked 14/2/22)
+  R/analysis/analysis_hatching_sex_ratio.R -- binomial glmer of probability of being male (N: WBC = 51, BC = 70) (checked 14/2/22)
+  R/analysis/analysis_immigration_sex_ratio.R -- simple summary of annual average sex ratio of breeding population (N: WBC = 3, BC = 7) (checked 14/2/22)
+  R/analysis/analysis_mating_system.R -- simple summary of annual average number of males per female (checked 14/2/22)
+  R/analysis/analysis_fledge_age.R -- lmer of fledge age. modelled each sex and species seperately, while controlling for tarsus size at fledging (rnd = nest_ID and year) (checked 23/2/22)
+  R/analysis/analysis_age_first_flight.R -- lmer of first flight times by sex. modelled each species seperately (rnd = nest_ID and year) (checked 14/2/22)
+  
+-----------------------
+Feb 23, 2021
+1b) scripts to visualze and report constant rates (tables and figs of effect sizes, etc.):
+  R/analysis/analysis_age_first_flight_modelling.R --
+  R/analysis/analysis_fledge_age_modeling.R --
 
-
+2) scripts for survival analysis and visualizations:
+  R/analysis/analysis_k-m_and_cox_survival_models.R -- Cox proportional hazard tests for sex and species, K-M plots
+  R/results/results_hazard_rate.R -- inverted hazard functions for sex and species
+  
+3) matrix model
+  R/analysis/analysis_sensitivity_analysis_JSR.R
+  R/analysis/analysis_JSR_bootstrap.R
+  R/analysis/analysis_WBC_adult_survival_bootstrap.R
+  R/analysis/analysis_age_distribution_plumage.R
