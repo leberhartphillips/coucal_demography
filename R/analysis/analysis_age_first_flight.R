@@ -30,7 +30,7 @@ ggplot(data = flight_dat) +
 # check for repeated measures within nest
 flight_dat %>%
   group_by(nest_ID) %>%
-  dplyr::summarise(n_ = n())
+  dplyr::dplyr::dplyr::summarise(n_ = n())
 
 # see here for a blog about how to bootstrap the model to estimate 
 # the 95% confidence interval around the predictions:
@@ -40,7 +40,7 @@ flight_dat %>%
 # devtools::install_github("remkoduursma/bootpredictlme4")
 # library(bootpredictlme4)
 
-#### Modeling (WBC) ----
+#### Modeling (BC) ----
 # subset to BC males
 male_BC <- filter(flight_dat, species == "BC" & sex == "M")
 
@@ -57,98 +57,176 @@ mod_flight_age_BC_male <-
 # simulate prediction
 predict_BC_male <- 
   predict(mod_flight_age_BC_male, 
-          #newdata = new_data_BC_male, 
+          # newdata = new_data_BC_male[1,], 
           re.form = NA, 
           se.fit = TRUE, 
           nsim = 1000)
 
-summary(mod_flight_age_BC_male)
+predict_BC_male$fit[1]
+lapply(predict_BC_male, `[[`, 1)$ci.fit
+lapply(predict_BC_male, `[[`, 2)$ci.fit
 
-# run model
-mod_fledge_age_BC_male <- 
-  lmer(Fledge_age ~ Fledge_tarsus +
+# subset to BC males
+female_BC <- filter(flight_dat, species == "BC" & sex == "F")
+
+# assess collinearity
+cor.test(female_BC$Fledge_tarsus, female_BC$Fledge_mass) # highly colinear: 0.67
+cor.test(female_BC$flight_age, female_BC$Fledge_mass) # 0.30
+cor.test(female_BC$flight_age, female_BC$Fledge_tarsus) # 0.10
+
+mod_flight_age_BC_female <- 
+  lmer(flight_age ~ 1 +
          (1 | nest_ID) + (1 | year), 
-       data = male_BC)
-
-# get the average size of a male tarsus for the model prediction
-new_data_BC_male <- 
-  expand.grid(Fledge_tarsus = 
-                mean(male_BC$Fledge_tarsus, 
-                     na.rm = TRUE))
+       data = female_BC)
 
 # simulate prediction
-predict_BC_male <- 
-  predict(mod_fledge_age_BC_male, 
-          #newdata = new_data_BC_male, 
+predict_BC_female <- 
+  predict(mod_flight_age_BC_female, 
+          # newdata = new_data_BC_male[1,], 
           re.form = NA, 
           se.fit = TRUE, 
           nsim = 1000)
 
-# "flight_age" as dependent variable, 
-# "sex", "fledge_age", and "fledge_mass" as independent
-mod_flight_age_WBC <-
-  lmer(flight_age ~ sex + Fledge_age + Fledge_mass +
-         (1 | nest_ID) + (1 | year), 
-       data = filter(flight_dat, species == "WBC"))
+predict_BC_female$fit[1]
 
-model_parameters(mod_flight_age_WBC)
-
-new_data_WBC <- 
-  expand.grid(sex = c("Female","Male"),
-              Fledge_age = mean(flight_dat[flight_dat$species == "WBC",]$Fledge_age),
-              Fledge_mass = mean(flight_dat[flight_dat$species == "WBC",]$Fledge_mass))
-
-predict_WBC <- 
-  predict(mod_flight_age_WBC, 
-          newdata = new_data_WBC, 
-          re.form = NA, 
-          se.fit = TRUE, 
-          nsim = 1000)
-
-plot(allEffects(mod_flight_age_WBC))
-
-mod_flight_age_WBC2 <-
-  lmer(flight_age ~ sex + 
-         (1 | nest_ID) + (1 | year), 
-       data = filter(flight_dat, species == "WBC"))
-
-new_data_WBC2 <- 
-  expand.grid(sex = c("Female","Male"))
-              #Fledge_age = mean(flight_dat[flight_dat$species == "WBC",]$Fledge_age),
-              #Fledge_mass = mean(flight_dat[flight_dat$species == "WBC",]$Fledge_mass))
-
-predict_WBC2 <- 
-  predict(mod_flight_age_WBC2, 
-          newdata = new_data_WBC2, 
-          re.form = NA, 
-          se.fit = TRUE, 
-          nsim = 1000)
+# str(predict_BC_male)
+# 
+# summary(mod_flight_age_BC_male)
+# 
+# # run model
+# mod_fledge_age_BC_male <- 
+#   lmer(Fledge_age ~ Fledge_tarsus +
+#          (1 | nest_ID) + (1 | year), 
+#        data = male_BC)
+# 
+# # get the average size of a male tarsus for the model prediction
+# new_data_BC_male <- 
+#   expand.grid(Fledge_tarsus = 
+#                 mean(male_BC$Fledge_tarsus, 
+#                      na.rm = TRUE))
+# 
+# # simulate prediction
+# predict_BC_male <- 
+#   predict(mod_fledge_age_BC_male, 
+#           #newdata = new_data_BC_male, 
+#           re.form = NA, 
+#           se.fit = TRUE, 
+#           nsim = 1000)
+# 
+# # "flight_age" as dependent variable, 
+# # "sex", "fledge_age", and "fledge_mass" as independent
+# mod_flight_age_WBC <-
+#   lmer(flight_age ~ sex + Fledge_age + Fledge_mass +
+#          (1 | nest_ID) + (1 | year), 
+#        data = filter(flight_dat, species == "WBC"))
+# 
+# model_parameters(mod_flight_age_WBC)
+# 
+# new_data_WBC <- 
+#   expand.grid(sex = c("Female","Male"),
+#               Fledge_age = mean(flight_dat[flight_dat$species == "WBC",]$Fledge_age),
+#               Fledge_mass = mean(flight_dat[flight_dat$species == "WBC",]$Fledge_mass))
+# 
+# predict_WBC <- 
+#   predict(mod_flight_age_WBC, 
+#           newdata = new_data_WBC, 
+#           re.form = NA, 
+#           se.fit = TRUE, 
+#           nsim = 1000)
+# 
+# plot(allEffects(mod_flight_age_WBC))
+# 
+# mod_flight_age_WBC2 <-
+#   lmer(flight_age ~ sex + 
+#          (1 | nest_ID) + (1 | year), 
+#        data = filter(flight_dat, species == "WBC"))
+# 
+# new_data_WBC2 <- 
+#   expand.grid(sex = c("Female","Male"))
+#               #Fledge_age = mean(flight_dat[flight_dat$species == "WBC",]$Fledge_age),
+#               #Fledge_mass = mean(flight_dat[flight_dat$species == "WBC",]$Fledge_mass))
+# 
+# predict_WBC2 <- 
+#   predict(mod_flight_age_WBC2, 
+#           newdata = new_data_WBC2, 
+#           re.form = NA, 
+#           se.fit = TRUE, 
+#           nsim = 1000)
 
 # boot_WBC_flight_age <- 
 #   bootMer(mod_flight_age_WBC, nsim = 1000, 
 #           FUN = function(x) predict(x, newdata = new_data_BC, re.form = NA))
 
-#### Modeling (BC) ----
-# "flight_age" as dependent variable, 
-# "sex", "fledge_age", and "fledge_mass" as independent
-mod_flight_age_BC <- 
-  lmer(flight_age ~ sex + Fledge_age + Fledge_mass +
-         (1 | nest_ID) + (1 | year), 
-       data = filter(flight_dat, species == "BC"))
+#### Modeling (WBC) ----
+# subset to BC males
+male_WBC <- filter(flight_dat, species == "WBC" & sex == "M")
 
-new_data_BC <- 
-  expand.grid(sex = c("Female","Male"),
-              Fledge_age = mean(flight_dat[flight_dat$species == "BC",]$Fledge_age),
-              Fledge_mass = mean(flight_dat[flight_dat$species == "BC",]$Fledge_mass))
+# assess collinearity
+cor.test(male_WBC$Fledge_tarsus, male_WBC$Fledge_mass) # highly colinear: 0.66
+cor.test(male_WBC$flight_age, male_WBC$Fledge_mass) # 0.17
+cor.test(male_WBC$flight_age, male_WBC$Fledge_tarsus) # -0.02
 
-predict_BC <- 
-  predict(mod_flight_age_BC, 
-          newdata = new_data_BC, 
+mod_flight_age_WBC_male <- 
+  lmer(flight_age ~ 1 +
+         (1 | nest_ID), 
+       data = male_WBC)
+
+# simulate prediction
+predict_WBC_male <- 
+  predict(mod_flight_age_WBC_male, 
+          # newdata = new_data_WBC_male[1,], 
           re.form = NA, 
           se.fit = TRUE, 
           nsim = 1000)
 
-plot(allEffects(mod_flight_age_BC))
+predict_WBC_male$fit[1]
+
+lapply(predict_WBC_male, `[[`, 1)$ci.fit
+lapply(predict_WBC_male, `[[`, 2)$ci.fit
+
+# subset to BC males
+female_WBC <- filter(flight_dat, species == "WBC" & sex == "F")
+
+# assess collinearity
+cor.test(female_WBC$Fledge_tarsus, female_WBC$Fledge_mass) # highly colinear: 0.51
+cor.test(female_WBC$flight_age, female_WBC$Fledge_mass) # 0.34
+cor.test(female_WBC$flight_age, female_WBC$Fledge_tarsus) # 0.32 ... better than mass
+
+mod_flight_age_WBC_female <- 
+  lmer(flight_age ~ 1 +
+         (1 | nest_ID), 
+       data = female_WBC)
+
+# simulate prediction
+predict_WBC_female <- 
+  predict(mod_flight_age_WBC_female, 
+          # newdata = new_data_WBC_male[1,], 
+          re.form = NA, 
+          se.fit = TRUE, 
+          nsim = 1000)
+
+predict_WBC_female$fit[1]
+
+# # "flight_age" as dependent variable, 
+# # "sex", "fledge_age", and "fledge_mass" as independent
+# mod_flight_age_BC <- 
+#   lmer(flight_age ~ sex + Fledge_age + Fledge_mass +
+#          (1 | nest_ID) + (1 | year), 
+#        data = filter(flight_dat, species == "BC"))
+# 
+# new_data_BC <- 
+#   expand.grid(sex = c("Female","Male"),
+#               Fledge_age = mean(flight_dat[flight_dat$species == "BC",]$Fledge_age),
+#               Fledge_mass = mean(flight_dat[flight_dat$species == "BC",]$Fledge_mass))
+# 
+# predict_BC <- 
+#   predict(mod_flight_age_BC, 
+#           newdata = new_data_BC, 
+#           re.form = NA, 
+#           se.fit = TRUE, 
+#           nsim = 1000)
+# 
+# plot(allEffects(mod_flight_age_BC))
 
 # boot_BC_flight_age <- 
 #   bootMer(mod_flight_age_BC, nsim = 1000, 
@@ -172,53 +250,53 @@ coucal_flight_age <-
   data.frame(trait = c("flight_age"),
              species = c("BC", "BC", "WBC", "WBC"),
              sex = c("F", "M", "F", "M"),
-             mean = c(predict_BC$fit[1],
-                      predict_BC$fit[2],
-                      predict_WBC$fit[1],
-                      predict_WBC$fit[2]),
-             CI_low = c(predict_BC$ci.fit[1, 1],
-                        predict_BC$ci.fit[1, 2],
-                        predict_WBC$ci.fit[1, 1],
-                        predict_WBC$ci.fit[1, 2]),
-             CI_high = c(predict_BC$ci.fit[2, 1],
-                        predict_BC$ci.fit[2, 2],
-                        predict_WBC$ci.fit[2, 1],
-                        predict_WBC$ci.fit[2, 2]),
-             n_inds = c(filter(flight_dat, species == "BC" & sex == "Female") %>% 
-                          summarise(n_ = n_distinct(Ring_ID)) %>% 
+             mean = c(predict_BC_female$fit[1],
+                      predict_BC_male$fit[2],
+                      predict_WBC_female$fit[1],
+                      predict_WBC_male$fit[2]),
+             CI_low = c(predict_BC_female$ci.fit[1, 1],
+                        predict_BC_male$ci.fit[1, 2],
+                        predict_WBC_female$ci.fit[1, 1],
+                        predict_WBC_male$ci.fit[1, 2]),
+             CI_high = c(predict_BC_female$ci.fit[2, 1],
+                        predict_BC_male$ci.fit[2, 2],
+                        predict_WBC_female$ci.fit[2, 1],
+                        predict_WBC_male$ci.fit[2, 2]),
+             n_inds = c(filter(flight_dat, species == "BC" & sex == "F") %>% 
+                          dplyr::summarise(n_ = n_distinct(Ring_ID)) %>% 
                           pull(n_),
-                        filter(flight_dat, species == "BC" & sex == "Male") %>% 
-                          summarise(n_ = n_distinct(Ring_ID)) %>% 
+                        filter(flight_dat, species == "BC" & sex == "M") %>% 
+                          dplyr::summarise(n_ = n_distinct(Ring_ID)) %>% 
                           pull(n_),
-                        filter(flight_dat, species == "WBC" & sex == "Female") %>% 
-                          summarise(n_ = n_distinct(Ring_ID)) %>% 
+                        filter(flight_dat, species == "WBC" & sex == "F") %>% 
+                          dplyr::summarise(n_ = n_distinct(Ring_ID)) %>% 
                           pull(n_),
-                        filter(flight_dat, species == "BC" & sex == "Male") %>% 
-                          summarise(n_ = n_distinct(Ring_ID)) %>% 
+                        filter(flight_dat, species == "BC" & sex == "M") %>% 
+                          dplyr::summarise(n_ = n_distinct(Ring_ID)) %>% 
                           pull(n_)),
-             n_nests = c(filter(flight_dat, species == "BC" & sex == "Female") %>% 
-                           summarise(n_ = n_distinct(nest_ID)) %>% 
+             n_nests = c(filter(flight_dat, species == "BC" & sex == "F") %>% 
+                           dplyr::summarise(n_ = n_distinct(nest_ID)) %>% 
                            pull(n_),
-                         filter(flight_dat, species == "BC" & sex == "Male") %>% 
-                           summarise(n_ = n_distinct(nest_ID)) %>% 
+                         filter(flight_dat, species == "BC" & sex == "M") %>% 
+                           dplyr::summarise(n_ = n_distinct(nest_ID)) %>% 
                            pull(n_),
-                         filter(flight_dat, species == "WBC" & sex == "Female") %>% 
-                           summarise(n_ = n_distinct(nest_ID)) %>% 
+                         filter(flight_dat, species == "WBC" & sex == "F") %>% 
+                           dplyr::summarise(n_ = n_distinct(nest_ID)) %>% 
                            pull(n_),
-                         filter(flight_dat, species == "WBC" & sex == "Male") %>% 
-                           summarise(n_ = n_distinct(nest_ID)) %>% 
+                         filter(flight_dat, species == "WBC" & sex == "M") %>% 
+                           dplyr::summarise(n_ = n_distinct(nest_ID)) %>% 
                            pull(n_)),
-             n_years = c(filter(flight_dat, species == "BC" & sex == "Female") %>% 
-                           summarise(n_ = n_distinct(year)) %>% 
+             n_years = c(filter(flight_dat, species == "BC" & sex == "F") %>% 
+                           dplyr::summarise(n_ = n_distinct(year)) %>% 
                            pull(n_),
                          filter(flight_dat, species == "BC" & sex == "Male") %>% 
-                           summarise(n_ = n_distinct(year)) %>% 
+                           dplyr::summarise(n_ = n_distinct(year)) %>% 
                            pull(n_),
                          filter(flight_dat, species == "WBC" & sex == "Female") %>% 
-                           summarise(n_ = n_distinct(year)) %>% 
+                           dplyr::summarise(n_ = n_distinct(year)) %>% 
                            pull(n_),
                          filter(flight_dat, species == "WBC" & sex == "Male") %>% 
-                           summarise(n_ = n_distinct(year)) %>% 
+                           dplyr::summarise(n_ = n_distinct(year)) %>% 
                            pull(n_))) %>% 
   mutate(sd = ifelse(!is.na(CI_low), 
                      approx_sd(x1 = CI_low, x2 = CI_high),
@@ -241,40 +319,40 @@ coucal_flight_age <-
 #                          (mod_flight_age_coefs[1, c(6)] + mod_flight_age_coefs[3, c(6)]) + pull(filter(coucal_flight_age, species == "WBC" & sex == "F"), mean),
 #                          (mod_flight_age_coefs[1, c(6)] + mod_flight_age_coefs[3, c(6)] + mod_flight_age_coefs[4, c(6)] + mod_flight_age_coefs[2, c(6)]) + pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), mean)),
 #              n_inds = c(filter(flight_dat, species == "BC" & Sex == "Female") %>%
-#                           summarise(n_ = n_distinct(Ind_ID)) %>%
+#                           dplyr::summarise(n_ = n_distinct(Ind_ID)) %>%
 #                           pull(n_),
 #                         filter(flight_dat, Spp == "BC" & Sex == "Male") %>%
-#                           summarise(n_ = n_distinct(Ind_ID)) %>%
+#                           dplyr::summarise(n_ = n_distinct(Ind_ID)) %>%
 #                           pull(n_),
 #                         filter(flight_dat, Spp == "WBC" & Sex == "Female") %>%
-#                           summarise(n_ = n_distinct(Ind_ID)) %>%
+#                           dplyr::summarise(n_ = n_distinct(Ind_ID)) %>%
 #                           pull(n_),
 #                         filter(flight_dat, Spp == "BC" & Sex == "Male") %>%
-#                           summarise(n_ = n_distinct(Ind_ID)) %>%
+#                           dplyr::summarise(n_ = n_distinct(Ind_ID)) %>%
 #                           pull(n_)),
 #              n_nests = c(filter(flight_dat, Spp == "BC" & Sex == "Female") %>%
-#                            summarise(n_ = n_distinct(Nst_No)) %>%
+#                            dplyr::summarise(n_ = n_distinct(Nst_No)) %>%
 #                            pull(n_),
 #                          filter(flight_dat, Spp == "BC" & Sex == "Male") %>%
-#                            summarise(n_ = n_distinct(Nst_No)) %>%
+#                            dplyr::summarise(n_ = n_distinct(Nst_No)) %>%
 #                            pull(n_),
 #                          filter(flight_dat, Spp == "WBC" & Sex == "Female") %>%
-#                            summarise(n_ = n_distinct(Nst_No)) %>%
+#                            dplyr::summarise(n_ = n_distinct(Nst_No)) %>%
 #                            pull(n_),
 #                          filter(flight_dat, Spp == "WBC" & Sex == "Male") %>%
-#                            summarise(n_ = n_distinct(Nst_No)) %>%
+#                            dplyr::summarise(n_ = n_distinct(Nst_No)) %>%
 #                            pull(n_)),
 #              n_years = c(filter(flight_dat, Spp == "BC" & Sex == "Female") %>%
-#                            summarise(n_ = n_distinct(Year)) %>%
+#                            dplyr::summarise(n_ = n_distinct(Year)) %>%
 #                            pull(n_),
 #                          filter(flight_dat, Spp == "BC" & Sex == "Male") %>%
-#                            summarise(n_ = n_distinct(Year)) %>%
+#                            dplyr::summarise(n_ = n_distinct(Year)) %>%
 #                            pull(n_),
 #                          filter(flight_dat, Spp == "WBC" & Sex == "Female") %>%
-#                            summarise(n_ = n_distinct(Year)) %>%
+#                            dplyr::summarise(n_ = n_distinct(Year)) %>%
 #                            pull(n_),
 #                          filter(flight_dat, Spp == "WBC" & Sex == "Male") %>%
-#                            summarise(n_ = n_distinct(Year)) %>%
+#                            dplyr::summarise(n_ = n_distinct(Year)) %>%
 #                            pull(n_))) %>%
 #   mutate(sd = ifelse(!is.na(CI_low),
 #                      approx_sd(x1 = CI_low, x2 = CI_high),

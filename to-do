@@ -124,8 +124,9 @@ Summary of analytical workflow:
   R/analysis/analysis_hatching_sex_ratio.R -- binomial glmer of probability of being male (N: WBC = 51, BC = 70) (checked 14/2/22)
   R/analysis/analysis_immigration_sex_ratio.R -- simple summary of annual average sex ratio of breeding population (N: WBC = 3, BC = 7) (checked 14/2/22)
   R/analysis/analysis_mating_system.R -- simple summary of annual average number of males per female (checked 14/2/22)
+  
   R/analysis/analysis_fledge_age.R -- lmer of fledge age. modelled each sex and species seperately, while controlling for tarsus size at fledging (rnd = nest_ID and year) (checked 23/2/22)
-  R/analysis/analysis_age_first_flight.R -- lmer of first flight times by sex. modelled each species seperately (rnd = nest_ID and year) (checked 14/2/22)
+  R/analysis/analysis_age_first_flight.R -- lmer of first flight ages. modelled each species and sex seperately, just with intercept model (rnd = nest_ID and year) (checked 23/2/22)
   
 -----------------------
 Feb 23, 2021
