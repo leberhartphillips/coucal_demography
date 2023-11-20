@@ -1,6 +1,6 @@
 # Reproducible datasets and code for:
 ## Early-life demographic processes do not drive adult sex ratio biases and mating systems in sympatric coucal species
-#### Luke Eberhart-Hertel^1,2,^\*, Ignas Safari^3,4,5^\*, Poyo Makomba^4^, Anne Hertel^6^, and Wolfgang Goymann^3,4,6,^
+#### Luke Eberhart-Hertel<sup>1,2,</sup>\*, Ignas Safari<sup>3,4,5</sup>\*, Poyo Makomba<sup>4</sup>, Anne Hertel<sup>6</sup>, and Wolfgang Goymann<sup>3,4,6</sup>
 \* joint first-authors
 
 1) *Max Planck Institute for Biological Intelligence, Behavioural Genetics and Evolutionary Ecology, Eberhard-Gwinner-Straße 5, 82319 Seewiesen, Germany*
