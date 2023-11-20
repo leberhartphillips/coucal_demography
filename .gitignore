@@ -52,12 +52,13 @@
 !R/junkyard/sensitivity_JSR_workflow.R
 !R/analysis/analysis_body_condition_fledglings.R
 
-!data/mol_sex.rds
-!data/chicks_2006_2020.rds
-!data/BaSTA_checked_life_table_females_2006-2020.rds
-!data/ceuta_egg_chick_female_data.rds
-!data/raw_encounter_histories_females_2006_2020.rds
-!data/raw_life_table_females_2006_2020.rds
+#!data/mol_sex.rds
+#!data/chicks_2006_2020.rds
+#!data/BaSTA_checked_life_table_females_2006-2020.rds
+#!data/ceuta_egg_chick_female_data.rds
+#!data/raw_encounter_histories_females_2006_2020.rds
+#!data/raw_life_table_females_2006_2020.rds
+!data/raw/Egg_surv_data_2001_2019_20210524.xls
 
 !output/multibasta_output_females_min_age_1_2006-2020.rds
 !output/stats_eggv_mod.rds

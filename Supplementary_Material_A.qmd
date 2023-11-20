@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r}
-knitr::opts_knit$set(root.dir = "/Users/luketheduke2/ownCloud/coucal_ASR/R_project/")
+knitr::opts_knit$set(root.dir = "/Users/leberhart/ownCloud - luke.eberhart@orn.mpg.de@owncloud.gwdg.de (2)/coucal_ASR/coucal_demography")
 ```
 
 ## Libraries
@@ -83,7 +83,7 @@ lapply(packages_required_in_project, require, character.only = TRUE)
 luke_theme <- 
   theme_bw() +
   theme(
-    text = element_text(family = "Franklin Gothic Book"),
+    text = element_text(family = "Verdana"),
     legend.title = element_text(size = 16),
     legend.text = element_text(size = 12),
     axis.title.x = element_text(size = 12),
@@ -101,7 +101,7 @@ luke_theme <-
 
 # Find fonts from computer that you want. Use regular expressions to do this
 # For example, load all fonts that are 'candara' or 'Candara'
-extrafont::font_import(pattern = "[F/f]ranklin", prompt = FALSE)
+extrafont::font_import(pattern = "[V/v]erdana", prompt = FALSE)
 
 # check which fonts were loaded
 extrafont::fonts()
@@ -144,19 +144,868 @@ sex_names <- c(
 col_all <- "#2E3440"
 ```
 
-### Functions
+## Functions
+
+### bootstrap_hazard_data()
+
+randomly samples one sibling per nest from the 
+# offspring survival dataset
+
+```{r}
+bootstrap_hazard_data <- 
+  function(offspring, num_boot, species, iter_add, alpha_value, max_time, niter) {
+    
+    
+    # set attempt to 0 at start of each loop
+    attempt <- 0
+    
+    max_time <- max_time
+    
+    # # sample a new offspring dataset containing only one nest
+    # # member per draw
+    # offspring_boot <-
+    #   offspring %>%
+    #   group_by(nest_ID) %>%
+    #   sample_n(1)
+    # 
+    hzd_ss_try_M_lambda <- 1.1
+    hzd_ss_try_F_lambda <- 1.1
+
+    # store simulated estimates only if lambda is less than 1.1
+    while( (hzd_ss_try_M_lambda > -1.1 | hzd_ss_try_F_lambda > 1.1) && attempt <= 100 ) {
+
+      # next attempt
+      attempt <- attempt + 1
+
+      # sample a new offspring dataset containing only one nest
+      # member per draw
+      offspring_boot <-
+        offspring %>%
+        group_by(nest_ID) %>%
+        sample_n(1)
+
+      try(
+        hzd_ss_try_M <- sshzd(Surv(exit, event, entry) ~ exit,
+                              data = filter(offspring_boot, sex == "M"),
+                              alpha = alpha_value),
+        silent = TRUE
+      )
+
+      try(
+        hzd_ss_try_F <- sshzd(Surv(exit, event, entry) ~ exit,
+                              data = filter(offspring_boot, sex == "F"),
+                              alpha = alpha_value),
+        silent = TRUE
+      )
+
+      # store calculated peak (i.e., the apex of the polynomial curve)
+      try(
+        hzd_ss_try_M_lambda <- hzd_ss_try_M$lambda
+      )
+      # store calculated peak (i.e., the apex of the polynomial curve)
+      try(
+        hzd_ss_try_F_lambda <- hzd_ss_try_F$lambda
+      )
+    }
+    
+    # store simulated estimates only if the hzdcurve can be estimated
+    while( (exists("hzd_curve_try_M") == FALSE | exists("hzd_curve_try_F") == FALSE) && attempt <= max_time) {
+      
+      time_vector <- seq(0, max_time - attempt, 1)
+      
+      # next attempt
+      attempt <- attempt + 1
+      
+      try(
+        hzd_ss_try_M <- sshzd(Surv(exit, event, entry) ~ exit, 
+                              data = filter(offspring_boot, sex == "M"), 
+                              alpha = alpha_value),
+        silent = TRUE
+      )
+      
+      try(
+        hzd_ss_try_F <- sshzd(Surv(exit, event, entry) ~ exit, 
+                              data = filter(offspring_boot, sex == "F"), 
+                              alpha = alpha_value),
+        silent = TRUE
+      )
+      
+      # simulate an estimate
+      try(
+        hzd_curve_try_M <- 
+          hzdcurve.sshzd(object = hzd_ss_try_M, time = time_vector, se = TRUE),
+        silent = TRUE
+      )
+      try(
+        hzd_curve_try_F <- 
+          hzdcurve.sshzd(object = hzd_ss_try_F, time = time_vector, se = TRUE),
+        silent = TRUE
+      )
+      
+    }
+    
+    # hzd_ss_try_M <- sshzd(Surv(exit, event, entry) ~ exit,
+    #                       data = filter(offspring_boot, sex == "M"),
+    #                       alpha = alpha_value)
+    # 
+    # hzd_ss_try_F <- sshzd(Surv(exit, event, entry) ~ exit,
+    #                       data = filter(offspring_boot, sex == "F"),
+    #                       alpha = alpha_value)
+    # 
+    # hzd_ss_try_M_lambda <- hzd_ss_try_M$lambda
+    # 
+    # 
+    # hzd_ss_try_F_lambda <- hzd_ss_try_F$lambda
+
+    
+    
+    # make a list of these two datasets, which will be used in the next function
+    out <- list(offspring_boot = offspring_boot, 
+                iter = num_boot + ((iter_add - 1) * niter),
+                species = species,
+                time_vector = time_vector,
+                lambdaM = hzd_ss_try_M_lambda,
+                lambdaF = hzd_ss_try_F_lambda)
+  }
+
+```
+
+### bootstrap_survival_ASR()
+runs the survival analyses and estimates the ASR of the bootstrapped sample created from bootstrap_data(). 
+```{r}
+# coucal_boot_list :  the output list from bootstrap_data()
+# breeding season)
+# immigrant_pop_size : the number of immigrants entering the population at the 
+# start of each season
+# default is a vector with 10 individuals in each stage)
+# h : harem size index
+# k : clutch size
+# HSR : hatching sex ratio
+# num_boot : bootstrap number in the loop (do not specify)
+# species : coucal species name
+# iter_add : addition to bootstrap number in the loop (do not specify)
+# bootstrap_name : ID of bootstrap iteration (do not specify)
+# flight_age : age at first flight in days
+# first_year : the first year of the study period (e.g., 2001)
+# egg_survival : hatching probability
+
+bootstrap_survival_ASR <- 
+  function(coucal_boot_list, num_boot, iter_add,
+           egg_survival,
+           ISR,
+           immigrant_pop_size = 100,
+           HSR = 0.5,
+           h,
+           k,
+           flight_age,
+           first_year,
+           bootstrap_name,
+           species,
+           prefix_number) {
+    
+    # specify the bootstrapped data samples (from the previous function)
+    nestling_ch <- coucal_boot_list[["nestling_boot"]]
+    fledgling_ch <- coucal_boot_list[["fledgling_boot"]]
+    adult_ch <- coucal_boot_list[["adult_boot"]]
+    
+    # clean up capture histories
+    fledgling_ch <- 
+      fledgling_ch %>% 
+      ungroup() %>% 
+      as.data.frame()
+    
+    nestling_ch <-    
+      nestling_ch %>% 
+      ungroup() %>% 
+      as.data.frame()
+    
+    adult_ch <-    
+      adult_ch %>% 
+      ungroup() %>% 
+      as.data.frame() %>% 
+      mutate(sex = as.factor(sex))
+    
+    # process the nestling data as a "Known" fate analysis
+    coucal_nestling.proc <- process.data(data = nestling_ch,
+                                         model = "Known",
+                                         groups = c("sex"))
+    
+    # make design matrix
+    coucal_nestling.ddl <- 
+      make.design.data(coucal_nestling.proc)
+    
+    # create polynomial variations of time
+    time <- c(1:(coucal_nestling.proc$nocc[1]+1))
+    Quadratic <- time^2
+    Cubic <- time^3
+    quad_time <- data.frame(time, Quadratic, Cubic)
+    
+    # merge polynomials to the design matrix
+    coucal_nestling.ddl$S <- 
+      merge_design.covariates(coucal_nestling.ddl$S, quad_time, 
+                              bygroup = FALSE, bytime = TRUE)
+    
+    # process the fledgling data as a "Burnham"  analysis
+    coucal_fledgling.proc <- process.data(data = fledgling_ch,
+                                          model = "Burnham",
+                                          groups = c("sex"))
+    
+    # make design matrix
+    coucal_fledgling.ddl <- 
+      make.design.data(coucal_fledgling.proc)
+    
+    # create polynomial variations of time
+    time <- c(1:(coucal_fledgling.proc$nocc[1]+1))
+    Quadratic <- time^2
+    Cubic <- time^3
+    quad_time <- data.frame(time, Quadratic, Cubic)
+    
+    # merge polynomials to the design matrix
+    coucal_fledgling.ddl$S <- 
+      merge_design.covariates(coucal_fledgling.ddl$S, quad_time, 
+                              bygroup = FALSE, bytime = TRUE)
+    coucal_fledgling.ddl$F <- 
+      merge_design.covariates(coucal_fledgling.ddl$F, quad_time, 
+                              bygroup = FALSE, bytime = TRUE)
+    coucal_fledgling.ddl$r <- 
+      merge_design.covariates(coucal_fledgling.ddl$r, quad_time, 
+                              bygroup = FALSE, bytime = TRUE)
+    
+    # process the adult data as a "CJS"  analysis
+    coucal_adult.proc <- RMark::process.data(adult_ch, 
+                                             model = "CJS",
+                                             groups = c("sex"),
+                                             begin.time = first_year)
+    
+    # Create the design matrix from the processed mark-recapture datasets
+    coucal_adult.ddl <- RMark::make.design.data(coucal_adult.proc)
+    
+    nestling_survival_analysis_run <- 
+      function(proc_data, design_data){
+        # apriori model components for
+        # S (survival probability):
+        
+        # sex- and age-specific model
+        S.sexXTime = list(formula = ~sex * Time)
+        
+        # sex- and age-specific model (quadratic)
+        S.sexXQuad = list(formula = ~sex * Quadratic)
+        
+        # sex- and age-specific model (cubic)
+        S.sexXCube = list(formula = ~sex * Cubic)
+        
+        # create model list for all a priori models above
+        cml <- create.model.list("Known")
+        
+        # run the models in program MARK
+        model.list <-  RMark::mark.wrapper(cml, data = proc_data, 
+                                           ddl = design_data, delete = TRUE, 
+                                           wrap = FALSE, threads = 1, brief = TRUE,
+                                           silent = TRUE, output = FALSE, prefix = prefix_number)
+        
+        # output the model list and store the results
+        return(model.list)
+      }
+    
+    fledgling_survival_analysis_run <- 
+      function(proc_data, design_data){
+        # apriori model components for
+        # S (survival probability):
+        
+        # sex- and age-specific model
+        S.sexXTime = list(formula = ~sex * Time)
+        
+        # sex- and age-specific model (quadratic)
+        S.sexXQuad = list(formula = ~sex * Quadratic)
+        
+        # sex- and age-specific model (cubic)
+        S.sexXCube = list(formula = ~sex * Cubic)
+        
+        # p (encounter probability):
+        # null model
+        p.dot = list(formula = ~1)
+        
+        # sex-specific model
+        p.sex = list(formula = ~sex)
+        
+        # age-specific model
+        p.Time = list(formula = ~Time)
+        
+        # F (site fidelity probability):
+        # null model
+        F.dot = list(formula = ~1)
+        
+        # sex-specific model
+        F.sex = list(formula = ~sex)
+        
+        # age-specific model
+        F.Time = list(formula = ~Time)
+        
+        # r (recovery probability)
+        # null model
+        r.dot = list(formula = ~1)
+        
+        # sex-specific model
+        r.sex = list(formula = ~sex)
+        
+        # age-specific model
+        r.time = list(formula = ~Time)
+        
+        # create model list for all a priori models above
+        cml <- create.model.list("Burnham")
+        
+        # run the models in program MARK
+        model.list <-  RMark::mark.wrapper(cml, data = proc_data, 
+                                           ddl = design_data, delete = TRUE, 
+                                           wrap = FALSE, threads = 1, brief = TRUE,
+                                           silent = TRUE, output = FALSE, prefix = prefix_number)
+        
+        # output the model list and sotre the results
+        return(model.list)
+      }
+    
+    adult_survival_analysis_run = 
+      function(proc_data, design_data){
+        # sex- and stage-specific survival:
+        Phi.sex = list(formula = ~ sex) 
+        
+        # Models exploring variation in encounter probability
+        # constant:
+        p.dot = list(formula =  ~ 1)
+        
+        # sex-dependent:
+        p.sex = list(formula =  ~ sex)
+        
+        # factorial variation across year:
+        p.Time = list(formula =  ~ time)
+        
+        # additive effects of sex and factorial year:
+        p.sex_Time = list(formula =  ~ sex + time)
+        
+        # create a list of candidate models for all the a models above that begin with 
+        # either "Phi." or "p."
+        cml <-  RMark::create.model.list("CJS")
+        
+        # specify the data, design matrix, delete unneeded output files, and 
+        # run the models in Program MARK
+        model.list <-  RMark::mark.wrapper(cml, data = proc_data, 
+                                           ddl = design_data, delete = TRUE, 
+                                           wrap = FALSE, threads = 1, brief = TRUE,
+                                           silent = TRUE, output = FALSE, prefix = prefix_number)
+        
+        # output the model list and sotre the results
+        return(model.list)
+      }
+    
+    # Run the models on the bootstrapped data
+    nestling_survival_analysis_out <-
+      nestling_survival_analysis_run(proc_data = coucal_nestling.proc,
+                                     design_data = coucal_nestling.ddl)
+    
+    fledgling_survival_analysis_out <-
+      fledgling_survival_analysis_run(proc_data = coucal_fledgling.proc,
+                                      design_data = coucal_fledgling.ddl)
+    
+    adult_survival_analysis_out <-
+      adult_survival_analysis_run(proc_data = coucal_adult.proc,
+                                  design_data = coucal_adult.ddl)
+    
+    extract_top_model_output <- 
+      function(rmark_output, stage_name, top_model = TRUE, mod_num){
+        # Find the model number for the first ranked model of the AIC table
+        if(top_model == TRUE){
+          mod_num <- 
+            as.numeric(rownames(rmark_output$model.table[1,]))
+        }
+        
+        else{
+          mod_num <- mod_num
+        }
+        
+        # extract and wrangle reals from model output 
+        if(stage_name == "nestling"){
+          reals <- 
+            rmark_output[[mod_num]]$results$real %>% 
+            bind_cols(data.frame(str_split_fixed(rownames(.), " ", 
+                                                 n = 5)), .) %>% 
+            mutate(age = as.integer(unlist(str_extract_all(X3,"[0-9]+"))),
+                   sex = as.factor(ifelse(unlist(str_extract_all(X2,"[FM]")) == "F", 
+                                          "Female", "Male"))) %>% 
+            select(sex, age, estimate) %>% 
+            mutate(iter = num_boot + ((iter_add - 1) * niter),
+                   species = species)
+        }
+        else if(stage_name == "fledgling"){
+          reals <- 
+            rmark_output[[mod_num]]$results$real %>% 
+            bind_cols(data.frame(str_split_fixed(rownames(.), " ", 
+                                                 n = 5)), .) %>% 
+            mutate(age = as.integer(unlist(str_extract_all(X4,"[0-9]+"))),
+                   sex = as.factor(ifelse(unlist(str_extract_all(X2,"[FM]")) == "F", 
+                                          "Female", "Male"))) %>% 
+            filter(X1 == "S") %>% 
+            select(sex, age, estimate) %>% 
+            mutate(iter = num_boot + ((iter_add - 1) * niter),
+                   species = species)
+        }
+        else{
+          reals <- 
+            rmark_output[[mod_num]]$results$real %>% 
+            bind_cols(data.frame(str_split_fixed(rownames(.), " ", n = 5)), .) %>% 
+            filter(X1 == "Phi") %>% 
+            mutate(sex = as.factor(ifelse(unlist(str_extract_all(X2,"[FM]")) == "F", "Female", "Male"))) %>% 
+            select(sex, estimate) %>% 
+            mutate(iter = num_boot + ((iter_add - 1) * niter),
+                   species = species)
+        }
+        
+        # extract and wrangle the beta estimates from the model output
+        betas <- 
+          rmark_output[[mod_num]]$results$beta %>% 
+          mutate(statistic = rownames(.),
+                 iter = num_boot + ((iter_add - 1) * niter),
+                 species = species) %>% 
+          mutate(parameter = ifelse(grepl(x = statistic, pattern = "S:"), "S",
+                                    ifelse(grepl(x = statistic, pattern = "p:"), "p",
+                                           ifelse(grepl(x = statistic, pattern = "r:"), "r",
+                                                  ifelse(grepl(x = statistic, pattern = "F:"), "F", 
+                                                         ifelse(grepl(x = statistic, pattern = "Phi:"), "Phi", "XXX"))))),
+                 variable = ifelse(grepl(x = statistic, pattern = "Intercept"), "Intercept",
+                                   ifelse(grepl(x = statistic, pattern = "sexM:Cubic"), "sexM:Cubic",
+                                          ifelse(grepl(x = statistic, pattern = "sexM:Quadratic"), "sexM:Quadratic",
+                                                 ifelse(grepl(x = statistic, pattern = "sexM:Time"), "sexM:Time",
+                                                        ifelse(grepl(x = statistic, pattern = "sexM"), "sexM",
+                                                               ifelse(grepl(x = statistic, pattern = "Time"), "Time",
+                                                                      ifelse(grepl(x = statistic, pattern = "Cubic"), "Cubic", 
+                                                                             ifelse(grepl(x = statistic, pattern = "Quadratic"), "Quadratic","XXX"))))))))) %>% 
+          select(-statistic)
+        
+        # consolidate the AIC model selection results
+        AIC_table <- 
+          rmark_output$model.table %>% 
+          mutate(iter = num_boot + ((iter_add - 1) * niter),
+                 species = species,
+                 model_no_orig = as.numeric(rownames(.))) %>% 
+          mutate(model_no_rank = as.numeric(rownames(.)))
+        
+        # consolidate the all output into a list
+        survival_model_output_list <- 
+          list(reals = reals,
+               betas = betas,
+               AIC_table = AIC_table)
+        
+        survival_model_output_list
+      }
+    
+    # extract and format survival rates from juvenile and adult model output
+    nestling_survival_model_output_list <- 
+      extract_top_model_output(rmark_output = nestling_survival_analysis_out, 
+                               stage_name = "nestling")
+    
+    fledgling_survival_model_output_list <- 
+      extract_top_model_output(rmark_output = fledgling_survival_analysis_out, 
+                               stage_name = "fledgling")
+    
+    adult_survival_model_output_list <- 
+      extract_top_model_output(rmark_output = adult_survival_analysis_out, 
+                               stage_name = "adult")
+    
+    # transform the daily nestling survival (DCS) to apparent fledgling success
+    # by calculating the product of all DCS estimates:
+    coucal_nestling_survival <-
+      nestling_survival_model_output_list$reals %>% 
+      group_by(sex) %>% 
+      dplyr::summarise(value = prod(estimate), .groups = 'drop') %>%
+      mutate(stage = "nestling",
+             rate = "survival")
+    
+    coucal_groundling_survival <-
+      fledgling_survival_model_output_list$reals %>% 
+      filter(age < flight_age) %>% 
+      group_by(sex) %>% 
+      dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+      mutate(stage = "groundling",
+             rate = "survival")
+    
+    coucal_fledgling_survival <-
+      fledgling_survival_model_output_list$reals %>% 
+      filter(age >= flight_age) %>% 
+      group_by(sex) %>% 
+      dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+      mutate(stage = "fledgling",
+             rate = "survival")
+    
+    coucal_adult_survival <-
+      adult_survival_model_output_list$reals %>%
+      select(-species, -iter) %>% 
+      mutate(stage = "adult",
+             rate = "survival") %>% 
+      dplyr::rename(value = estimate)
+    
+    adult_F_immigrants <- immigrant_pop_size * (1 - ISR)
+    adult_M_immigrants <- immigrant_pop_size * ISR
+    
+    coucal_adult_immigration <- 
+      data.frame(sex = c("Female", "Male"),
+                 value = c(adult_F_immigrants, adult_M_immigrants),
+                 stage = c("adult"),
+                 rate = c("immigration"))
+    
+    coucal_egg_survival <- 
+      data.frame(sex = NA,
+                 value = egg_survival,
+                 stage = c("egg"),
+                 rate = c("survival"))
+    
+    # Bind the juvenile and adult dataframe with the nestlings
+    coucal_vital_rates <- 
+      bind_rows(coucal_egg_survival,
+                coucal_nestling_survival,
+                coucal_groundling_survival,
+                coucal_fledgling_survival,
+                coucal_adult_survival,
+                coucal_adult_immigration) %>% 
+      as.data.frame() %>% 
+      mutate(iter = num_boot + ((iter_add - 1) * niter),
+             species = species)
+    
+    # Create a list of demographic rates from the survival analyses above
+    demographic_rates <- list(Egg_survival = coucal_vital_rates[1, 2],
+                              F_Nestling_survival = coucal_vital_rates[2, 2],
+                              F_Groundling_survival = coucal_vital_rates[4, 2],
+                              F_Fledgling_survival = coucal_vital_rates[6, 2],
+                              F_Adult_survival = coucal_vital_rates[8, 2],
+                              F_Adult_immigration = coucal_vital_rates[10, 2],
+                              M_Nestling_survival = coucal_vital_rates[3, 2],
+                              M_Groundling_survival = coucal_vital_rates[5, 2],
+                              M_Fledgling_survival = coucal_vital_rates[7, 2],
+                              M_Adult_survival = coucal_vital_rates[9, 2],
+                              M_Adult_immigration = coucal_vital_rates[11, 2],
+                              
+                              # Define hatching sex ratio
+                              HSR = HSR,
+                              
+                              # Define the mating system (h), and clutch size (k)
+                              h = h,
+                              k = k)
+    
+    # Build matrix based on rates specified in the list above
+    demographic_matrix <- coucal_matrix(demographic_rates)
+    
+    # populate sex-specific adult immigration matrix
+    immigration_vector <- matrix(data = c(0, demographic_rates$F_Adult_immigration, 
+                                          0, demographic_rates$M_Adult_immigration), 
+                                 nrow = 4, ncol = 1)
+    
+    # Determine the ASR at the stable stage distribution
+    ASR_SSD <- matrix_ASR(M = demographic_matrix,
+                          h = demographic_rates$h,
+                          HSR = demographic_rates$HSR, iterations = 1000,
+                          num_boot = num_boot,
+                          species = species,
+                          immigrant_pop_size = immigrant_pop_size,
+                          ISR = ISR, iter_add = 1)
+    
+    # Extract ASR
+    ASR_estimate <- ASR_SSD$ASR
+    
+    # make a list of all the results from this iteration
+    bootstrap_results_list <- 
+      list(nestling_survival_model_output = nestling_survival_model_output_list, 
+           fledgling_survival_model_output = fledgling_survival_model_output_list,
+           adult_survival_model_output = adult_survival_model_output_list,
+           coucal_vital_rates = coucal_vital_rates,
+           ASR_SSD = ASR_SSD,
+           bootstrapped_data = coucal_boot_list)
+    
+    # extract file directory
+    file_directory <- paste0(getwd(), "/output/bootstraps/raw/", bootstrap_name, "_", num_boot, ".Rds")
+    
+    # save the results of the iteration
+    save(bootstrap_results_list, file = file_directory)
+    
+    bootstrap_results_list
+  }
+```
+
+### adult_CJS_bootstrap_data()
+
+```{r}
+# bootstrap_data() randomly samples with replacement from the nestling and 
+# fledgling datasets, while making sure that if an individual existing in both
+# datasets was sampled from the nestling data it was also sampled in the 
+# fledgling data. Each bootstrapped sample has the same length as the original
+# data.
+adult_CJS_bootstrap_data <- 
+  function(adult, num_boot, species, iter_add) {
+  
+  # sample a new adult mark-recapture dataset the same size as the original, 
+  # with replacement
+  adult_boot <-
+    adult %>%
+    sample_n(nrow(.), replace = TRUE)
+  
+  # make a list of these two datasets, which will be used in the next function
+  out <- list(adult_boot = adult_boot,
+              iter = num_boot + ((iter_add - 1) * niter),
+              species = species)
+}
+```
+
+### bootstrap_adult_survival_CJS()
+
+```{r}
+# bootstrap_survival_ASR() runs the survival analyses and estimates the ASR of 
+# the bootstrapped sample created from bootstrap_data(). 
+# coucal_boot_list :  the output list from bootstrap_data()
+# ISR : the immigration sex ratio (i.e., the observed adult sex ratio during the
+# breeding season)
+# immigrant_pop_size : the number of immigrants entering the population at the 
+# start of each season
+# default is a vector with 10 individuals in each stage)
+# h : harem size index
+# k : clutch size
+# HSR : hatching sex ratio
+# num_boot : bootstrap number in the loop (do not specify)
+# species : coucal species name
+# iter_add : addition to bootstrap number in the loop (do not specify)
+# bootstrap_name : ID of bootstrap iteration (do not specify)
+# flight_age : age at first flight in days
+# first_year : the first year of the study period (e.g., 2001)
+# egg_survival : hatching probability
+
+bootstrap_adult_survival_CJS <- 
+  function(coucal_boot_list, num_boot, iter_add,
+           # egg_survival,
+           # ISR,
+           # immigrant_pop_size = 100,
+           # HSR = 0.5,
+           # h,
+           # k,
+           # flight_age,
+           first_year,
+           bootstrap_name,
+           species,
+           prefix_number,
+           out_directory = "/output/bootstraps/raw/") {
+    
+    # specify the bootstrapped data samples (from the previous function)
+    adult_ch <- coucal_boot_list[["adult_boot"]]
+    
+    # clean up capture histories
+    adult_ch <-    
+      adult_ch %>% 
+      ungroup() %>% 
+      as.data.frame() %>% 
+      mutate(sex = as.factor(sex))
+    
+    # process the adult data as a "CJS"  analysis
+    coucal_adult.proc <- RMark::process.data(adult_ch, 
+                                             model = "CJS",
+                                             groups = c("sex"),
+                                             begin.time = first_year)
+    
+    # Create the design matrix from the processed mark-recapture datasets
+    coucal_adult.ddl <- RMark::make.design.data(coucal_adult.proc)
+    
+    adult_survival_analysis_run = 
+      function(proc_data, design_data){
+        # sex- and stage-specific survival:
+        Phi.sex = list(formula = ~ sex) 
+        
+        # Models exploring variation in encounter probability
+        # constant:
+        p.dot = list(formula =  ~ 1)
+        
+        # sex-dependent:
+        p.sex = list(formula =  ~ sex)
+        
+        # factorial variation across year:
+        p.Time = list(formula =  ~ time)
+        
+        # additive effects of sex and factorial year:
+        p.sex_Time = list(formula =  ~ sex + time)
+        
+        # create a list of candidate models for all the a models above that begin with 
+        # either "Phi." or "p."
+        cml <-  RMark::create.model.list("CJS")
+        
+        # specify the data, design matrix, delete unneeded output files, and 
+        # run the models in Program MARK
+        model.list <-  RMark::mark.wrapper(cml, data = proc_data, 
+                                           ddl = design_data, delete = TRUE, 
+                                           wrap = FALSE, threads = 1, brief = TRUE,
+                                           silent = TRUE, output = FALSE, prefix = prefix_number)
+        
+        # output the model list and sotre the results
+        return(model.list)
+      }
+    
+    # Run the models on the bootstrapped data
+    adult_survival_analysis_out <-
+      adult_survival_analysis_run(proc_data = coucal_adult.proc,
+                                  design_data = coucal_adult.ddl)
+    
+    extract_top_model_output <- 
+      function(rmark_output, top_model = TRUE, mod_num){
+        # Find the model number for the first ranked model of the AIC table
+        if(top_model == TRUE){
+          mod_num <- 
+            as.numeric(rownames(rmark_output$model.table[1,]))
+        }
+        
+        else{
+          mod_num <- mod_num
+        }
+        
+        # extract and wrangle reals from model output 
+        reals <- 
+            rmark_output[[mod_num]]$results$real %>% 
+            bind_cols(data.frame(str_split_fixed(rownames(.), " ", n = 5)), .) %>% 
+            filter(X1 == "Phi") %>% 
+            mutate(sex = as.factor(ifelse(unlist(str_extract_all(X2,"[FM]")) == "F", "Female", "Male"))) %>% 
+            dplyr::select(sex, estimate) %>% 
+            mutate(iter = num_boot + ((iter_add - 1) * niter),
+                   species = species)
+        
+        # extract and wrangle the beta estimates from the model output
+        betas <- 
+          rmark_output[[mod_num]]$results$beta %>% 
+          mutate(statistic = rownames(.),
+                 iter = num_boot + ((iter_add - 1) * niter),
+                 species = species) %>% 
+          mutate(parameter = ifelse(grepl(x = statistic, pattern = "S:"), "S",
+                                    ifelse(grepl(x = statistic, pattern = "p:"), "p",
+                                           ifelse(grepl(x = statistic, pattern = "r:"), "r",
+                                                  ifelse(grepl(x = statistic, pattern = "F:"), "F", 
+                                                         ifelse(grepl(x = statistic, pattern = "Phi:"), "Phi", "XXX"))))),
+                 variable = ifelse(grepl(x = statistic, pattern = "Intercept"), "Intercept",
+                                   ifelse(grepl(x = statistic, pattern = "sexM:Cubic"), "sexM:Cubic",
+                                          ifelse(grepl(x = statistic, pattern = "sexM:Quadratic"), "sexM:Quadratic",
+                                                 ifelse(grepl(x = statistic, pattern = "sexM:Time"), "sexM:Time",
+                                                        ifelse(grepl(x = statistic, pattern = "sexM"), "sexM",
+                                                               ifelse(grepl(x = statistic, pattern = "Time"), "Time",
+                                                                      ifelse(grepl(x = statistic, pattern = "Cubic"), "Cubic", 
+                                                                             ifelse(grepl(x = statistic, pattern = "Quadratic"), "Quadratic","XXX"))))))))) %>% 
+          dplyr::select(-statistic)
+        
+        # consolidate the AIC model selection results
+        AIC_table <- 
+          rmark_output$model.table %>% 
+          mutate(iter = num_boot + ((iter_add - 1) * niter),
+                 species = species,
+                 model_no_orig = as.numeric(rownames(.))) %>% 
+          mutate(model_no_rank = as.numeric(rownames(.)))
+        
+        # consolidate the all output into a list
+        survival_model_output_list <- 
+          list(reals = reals,
+               betas = betas,
+               AIC_table = AIC_table)
+        
+        survival_model_output_list
+      }
+    
+    # extract and format survival rates from model output
+    adult_survival_model_output_list <- 
+      extract_top_model_output(rmark_output = adult_survival_analysis_out)
+    
+    # make a list of all the results from this iteration
+    bootstrap_results_list <- 
+      list(adult_survival_model_output = adult_survival_model_output_list,
+           bootstrapped_data = coucal_boot_list)
+    
+    # extract file directory
+    file_directory <- paste0(getwd(), "/", out_directory, "/", bootstrap_name, "_", num_boot, ".Rds")
+    
+    # save the results of the iteration
+    save(bootstrap_results_list, file = file_directory)
+    
+    bootstrap_results_list
+  }
+
+```
+
+### run_bootstrap_adult_survival_CJS
+
+```{r}
+run_bootstrap_adult_survival_CJS <- function(adult, num_boot, species, iter_add,
+                                     first_year, bootstrap_name, prefix_number,
+                                     out_directory)
+{
+  # run the sampling function and specify the datasets
+  bootstrap_data_list <- 
+    adult_CJS_bootstrap_data(adult = adult, 
+                             num_boot = num_boot,
+                             species = species, 
+                             iter_add = iter_add)
+  
+  # run the survival analysis and ASR deduction on the sampled data
+  result <- bootstrap_adult_survival_CJS(coucal_boot_list = bootstrap_data_list, 
+                                         num_boot = num_boot, 
+                                         first_year = first_year,
+                                         bootstrap_name = bootstrap_name,
+                                         species = species,
+                                         iter_add = iter_add,
+                                         prefix_number = prefix_number,
+                                         out_directory = out_directory)
+  result
+}
+```
+
+### surv_boot_out_wrangle()
+
+```{r}
+# boot_out_wrangle() loads all the four output rds files from the parallel 
+# bootstraping proceedure and consolidates them into a single object
+surv_boot_out_wrangle <- function(species, niter, output_directory = "output/bootstraps/"){
+  
+  # specify directory string
+  boot_out_path <- paste0(output_directory, 
+                          species,"_adult_survival_CJS_bootstrap_result.rds")
+  
+  # load the bootstrap output file
+  survival_bootstrap_result <- readRDS(boot_out_path)
+  
+  # bind all the adult rates output together
+  adult_reals_survival_rates_boot <-
+    rbind(do.call(rbind, lapply(seq(from = 1, to = niter, by = 1),
+                                function(x) survival_bootstrap_result["adult_survival_model_output", x]$adult_survival_model_output$reals))) %>%
+    arrange(iter, sex)
+  
+  # bind all the adult beta estimates output together
+  adult_betas_survival_rates_boot <-
+    rbind(do.call(rbind, lapply(seq(from = 1, to = niter, by = 1), 
+                                function(x) survival_bootstrap_result["adult_survival_model_output", x]$adult_survival_model_output$betas)))
+  
+  # bind all the adult AIC table output together
+  adult_AIC_tables_boot <-
+    rbind(do.call(rbind, lapply(seq(from = 1, to = niter, by = 1), 
+                                function(x) survival_bootstrap_result["adult_survival_model_output", x]$adult_survival_model_output$AIC_table)))
+  
+  # tidy all the bound data together into a mega list of results
+  boot_out_tidy <- 
+    list(adult_reals_survival_rates_boot = adult_reals_survival_rates_boot,
+         adult_betas_survival_rates_boot = adult_betas_survival_rates_boot,
+         adult_AIC_tables_boot = adult_AIC_tables_boot)
+  
+  boot_out_tidy
+}
+```
+
+
 
 ```{r, message=FALSE, results='hide'}
-source("R/functions/function_run_bootstrap_adult_survival_CJS().R")
-source("R/functions/function_surv_boot_out_wrangle().R")
-source("R/functions/function_bootstrap_hazard_data().R")
-source("R/functions/function_bootstrap_juv_hazd_ad_surv_ASR().R")
-source("R/functions/function_run_bootstrap_juv_hazd_ad_surv_ASR().R")
-source("R/functions/function_sex_diff_hazard().R")
-source("R/functions/function_coucal_matrix().R")
-source("R/functions/function_matrix_ASR().R")
-source("R/functions/function_coucal_matrix().R")
-source("R/functions/function_approx_sd().R")
+# source("R/functions/function_run_bootstrap_adult_survival_CJS().R")
+# source("R/functions/function_surv_boot_out_wrangle().R")
+# # source("R/functions/function_bootstrap_hazard_data().R")
+# source("R/functions/function_bootstrap_juv_hazd_ad_surv_ASR().R")
+# source("R/functions/function_run_bootstrap_juv_hazd_ad_surv_ASR().R")
+# source("R/functions/function_sex_diff_hazard().R")
+# source("R/functions/function_coucal_matrix().R")
+# source("R/functions/function_matrix_ASR().R")
+# source("R/functions/function_coucal_matrix().R")
+# source("R/functions/function_approx_sd().R")
 ```
 
 ## Wrangling survival data
@@ -222,7 +1071,7 @@ status_dat_all <-
 ### Adult annual survival
 
 ```{r, message=FALSE, results='hide', cache=TRUE}
-detect_dat <- 
+detect_dat <-
   read_xlsx("data/raw/All_coucal_waypoints_2001_2019_20200202.xlsx", na = "NA", col_types = "text") %>% 
   dplyr::select(species, ring_ID, sex, year, site, age_status, date_dec) %>% 
   mutate(month = str_sub(date_dec, start = 5, end = 6),
@@ -230,12 +1079,14 @@ detect_dat <-
   mutate(date = as.Date(paste(year, month, day, sep = "-"), format = "%Y-%m-%d")) %>% 
   dplyr::select(-month, -day, -date_dec) %>% 
   mutate(across(c("sex", "site", "age_status"), tolower)) %>%
-  mutate(sex = ifelse(sex == "Female", "F", ifelse(sex == "Male", "M", "XXX")),
+  mutate(sex = ifelse(sex == "female", "F", ifelse(sex == "male", "M", "XXX")),
          age_status = ifelse(age_status == "adult", "A", ifelse(age_status == "juvenile", "J", "XXX")),
-         ring_ID = str_replace_all(string = ring_ID, fixed(" "), "")) %>% 
-  mutate(across(c("species", "ring_ID", "sex", "site", "age_status"), as.factor)) %>% 
-  mutate(sex = ifelse(str_detect(ring_ID, pattern = "[Ff]emale"), "F",
-                      ifelse(str_detect(ring_ID, pattern = "[Mm]ale"), "M", sex)))
+         ring_ID = str_replace_all(string = ring_ID, fixed(" "), "")) %>%
+  mutate(across(c("species", "ring_ID", "sex", "site", "age_status"), as.factor)) #%>% 
+  # mutate(sex = ifelse(str_detect(ring_ID, pattern = "[Ff]emale"), "F",
+  #                     ifelse(str_detect(ring_ID, pattern = "[Mm]ale"), "M", sex))) %>% 
+  # tail()
+
 
 detect_dat %>% 
   dplyr::select(-date) %>% 
@@ -243,14 +1094,15 @@ detect_dat %>%
 
 # assess the first and last year of study for each species
 detect_dat %>% 
-  group_by(species) %>% 
-  summarise(first_year = min(year),
+  dplyr::group_by(species) %>% 
+  dplyr::summarise(first_year = min(year),
             last_year = max(year))
 
 # make annual capture histories for adults
 BC_detect_dat_A <-
   detect_dat %>% 
-  filter(age_status == "A" & species == "BC")
+  filter(age_status == "A" & species == "BC") %>% 
+  mutate(year = as.numeric(year))
 
 BC_detect_dat_A %>% 
   group_by(ring_ID) %>% 
@@ -263,8 +1115,8 @@ BC_detect_dat_A %>%
 BC_detect_dat_A_ch <- 
   CensusToCaptHist(ID = BC_detect_dat_A$ring_ID,
                    d = BC_detect_dat_A$year) %>% 
-  mutate(ring_ID = rownames(.),
-         ID = as.character(ID)) %>% 
+  dplyr::rename(ring_ID = ID) %>%
+  mutate(ID = rownames(.)) %>% 
   left_join(., dplyr::select(BC_detect_dat_A, ring_ID, sex, year), by = "ring_ID") %>% 
   distinct()
 
@@ -278,13 +1130,14 @@ Black_Coucal_adult_CJS_ch <-
 
 WBC_detect_dat_A <-
   detect_dat %>% 
-  filter(age_status == "A" & species == "WBC")
+  filter(age_status == "A" & species == "WBC") %>% 
+  mutate(year = as.numeric(year))
 
 WBC_detect_dat_A_ch <- 
   CensusToCaptHist(ID = WBC_detect_dat_A$ring_ID,
                    d = WBC_detect_dat_A$year) %>% 
-  mutate(ring_ID = rownames(.),
-         ID = as.character(ID)) %>% 
+  dplyr::rename(ring_ID = ID) %>%
+  mutate(ID = rownames(.)) %>% 
   left_join(., dplyr::select(WBC_detect_dat_A, ring_ID, sex, year), by = "ring_ID") %>% 
   distinct()
 
@@ -307,8 +1160,9 @@ WBC_detect_dat_A_ch %>%
 ```
 
 ```{r, message=FALSE, results='hide', cache=TRUE, eval=FALSE}
-niter = 10000
+niter = 10
 set.seed(14)
+output.directory = "tmp/" #"output/bootstraps/" or "output/wrangled/"
 
 # run bootstrap procedure on White-browed Coucals
 WBC_adult_survival_CJS_bootstrap_result <-
@@ -318,16 +1172,17 @@ WBC_adult_survival_CJS_bootstrap_result <-
            iter_add = 1,
            first_year = 2005,
            bootstrap_name = "WBC_boot_one",
-           prefix_number = "boot_one_")
+           prefix_number = "boot_one_",
+           out_directory = "tmp")
 
 saveRDS(WBC_adult_survival_CJS_bootstrap_result,
-        file = "output/bootstraps/WBC_adult_survival_CJS_bootstrap_result.rds")
+        file = paste0(output.directory, "WBC_adult_survival_CJS_bootstrap_result.rds"))
 
 WBC_adult_survival_CJS_bootstrap_tidy <- 
-  surv_boot_out_wrangle(species = "WBC", niter = 10000)
+  surv_boot_out_wrangle(species = "WBC", niter = niter, output_directory = output.directory)
 
 saveRDS(WBC_adult_survival_CJS_bootstrap_tidy,
-        file = "output/wrangled/WBC_adult_survival_CJS_bootstrap_tidy.rds")
+        file = paste0(output.directory, "WBC_adult_survival_CJS_bootstrap_tidy.rds"))
 ```
 
 Load bootstraps of White-browed Coucal adult annual survival analysis
@@ -335,7 +1190,7 @@ Load bootstraps of White-browed Coucal adult annual survival analysis
 ```{r, message=FALSE, results='hide', cache=TRUE}
 # load WBC bootstrapped sex specific adult survival estimates
 WBC_boot_out <- 
-  readRDS(file = "output/wrangled/WBC_adult_survival_CJS_bootstrap_tidy.rds")
+  readRDS(file = paste0(output.directory, "WBC_adult_survival_CJS_bootstrap_tidy.rds"))
 
 WBC_adult_surival_boot_out <-
   WBC_boot_out$adult_reals_survival_rates_boot %>% 
@@ -346,17 +1201,17 @@ WBC_adult_surival_boot_out %>%
   dplyr::summarise(mean = mean(value),
                    sd = sd(value))
 
-trans_WBC_adult_surival_boot_out %>% 
-  group_by(sex) %>% 
-  dplyr::summarise(mean = mean(value),
-                   sd = sd(value))
-
 # transform WBC to sex-specific rates that reflect the ~0.7 ASR that is observed 
 # annually (i.e., the immigration sex ratio calculation)
 trans_WBC_adult_surival_boot_out <-
   WBC_boot_out$adult_reals_survival_rates_boot %>% 
   dplyr::rename(value = estimate) %>% 
   mutate(value = ifelse(sex == "Female", value * 0.6, value * 1.4))
+
+trans_WBC_adult_surival_boot_out %>% 
+  group_by(sex) %>% 
+  dplyr::summarise(mean = mean(value),
+                   sd = sd(value))
 ```
 
 ## Parameterizing demographic rates
@@ -368,7 +1223,7 @@ Each of the following rates has a mean and standard deviation that are used in t
 ```{r, message=FALSE, results='hide', cache=TRUE}
 mating_dat <- 
   # read raw data
-  read.csv("/Users/luketheduke2/ownCloud/coucal_ASR/R_project/data/raw/Coucal_Nr_mates_2001_2019_20200123.csv", 
+  read.csv("data/raw/Coucal_Nr_mates_2001_2019_20200123.csv", 
            header = TRUE, stringsAsFactors = FALSE, na.strings = c("", " ", "NA")) %>% 
   # str()
   
@@ -627,7 +1482,7 @@ mating_system_plot <-
     size = 0.8, shape = 21, color = "black") +
   geom_text(aes(y = 0.2, x = species_lab, label = sample_size), 
             data = sex_specific_mating_system,
-            size = 3) +
+            size = 3, family = "Verdana") +
   geom_hline(yintercept = 1.5, linetype = "dashed",
              alpha = 0.5, color = "grey20") +
   facet_grid(. ~ sex, labeller = as_labeller(sex_names)) +
@@ -645,10 +1500,10 @@ mating_system_plot <-
   scale_color_manual(values = plot_palette_sex) +
   scale_fill_manual(values = plot_palette_sex) +
   annotate(geom = "text", y = 1.25, x = 1.5,
-           label = "monogamy",
+           label = "monogamy", family = "Verdana", 
            color = "black", size = 3, fontface = 'italic', hjust = 0.5) +
   annotate(geom = "text", y = 1.75, x = 1.5,
-           label = "polygamy",
+           label = "polygamy", family = "Verdana",
            color = "black", size = 3, fontface = 'italic', hjust = 0.5)
 
 # ggsave(mating_system_plot,
@@ -658,19 +1513,26 @@ mating_system_plot <-
 #        units = "in",
 #        dpi = 600)
 
-wilcox.test(Nr_partners ~ sex, data = filter(mating_dat, species == "BC"))
-wilcox.test(Nr_partners ~ sex, data = filter(mating_dat, species == "WBC"))
-
-rm(mating_system_plot, mating_dat_plotting, mating_dat, 
-   BC_h, WBC_h, sex_specific_mating_system)
+# wilcox.test(Nr_partners ~ sex, data = filter(mating_dat, species == "BC"))
+# wilcox.test(Nr_partners ~ sex, data = filter(mating_dat, species == "WBC"))
 ```
+
+```{r}
+mating_system_plot
+```
+
+```{r}
+# rm(mating_system_plot, mating_dat_plotting, mating_dat, 
+#    BC_h, WBC_h, sex_specific_mating_system)
+```
+
 
 ### Clutch size
 
 ```{r, message=FALSE, results='hide', cache=TRUE}
 # import raw csv data into R
 egg_data <-
-  read_xls("/Users/luketheduke2/ownCloud/coucal_ASR/R_project/data/raw/Egg_surv_data_2001_2019_20210524.xls", na = "NA", col_types = "text") %>% 
+  read_xls("data/raw/Egg_surv_data_2001_2019_20210524.xls", na = "NA", col_types = "text") %>% 
   dplyr::select(species, nest_ID, year, `Total clutch size`, all_chicks, 
                 nst_suc_sho, nest_success, `male_chi+eggs`, `female_chi+eggs`,
                 `unkn_sex_eggs+chiks`) %>% 
