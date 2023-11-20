@@ -82,8 +82,8 @@ status_dat_fledglings <-
          site = tolower(site)) %>% 
   
   # select variables of interest
-  select(species, ring_ID, lab_no, sex, year, site, nest_ID, pref_age, 
-         Fledged_status, postf_age, postf_status, ageC, lay_date, hatch_order) %>% 
+  dplyr::select(species, ring_ID, lab_no, sex, year, site, nest_ID, pref_age, 
+                Fledged_status, postf_age, postf_status, ageC, lay_date, hatch_order) %>% 
   
   # remove all white space from data
   mutate(across(everything(), ~str_trim(.x))) %>% 

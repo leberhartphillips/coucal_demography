@@ -1,9 +1,22 @@
 # Reproducible datasets and code for:
-## Early life stepping stones to sex role evolution: Sex-specific offspring survival dynamics of two sympatric coucal species differing in mating system
-#### Ignas Safari, Luke J. Eberhart-Hertel, and Wolfgang Goymann
-#### *In prep* 
+## Early-life demographic processes do not drive adult sex ratio biases and mating systems in sympatric coucal species
+#### Luke Eberhart-Hertel^1,2,^\*, Ignas Safari^3,4,5^\*, Poyo Makomba^4^, Anne Hertel^6^, and Wolfgang Goymann^3,4,6,^
+\* joint first-authors
 
-In this repository you can find all the raw data and code needed to reproduce our investigation of sex-specific survival of offspring black coucals (_Centropus grillii_) and white-browed coucals (_Centropus superciliosus_) monitored over a 15-year period in south-western Tanzania.
+1) *Max Planck Institute for Biological Intelligence, Behavioural Genetics and Evolutionary Ecology, Eberhard-Gwinner-Straße 5, 82319 Seewiesen, Germany*
+2) *Max Planck Institute for Biological Intelligence, Department of Ornithology, Eberhard-Gwinner-Straße 7/8, 82319 Seewiesen, Germany*
+3) *Max Planck Institute for Biological Intelligence, Department Behavioural Neurobiology, Eberhard-Gwinner-Straße 6a, 82319 Seewiesen, Germany*
+4) *Coucal Project, P.O. Box 26, Chimala, Tanzania*
+5) *Department of Biology, College of Natural and Mathematical Sciences, University of Dodoma, P.O. Box 338, Dodoma, Tanzania*
+6) *Ludwig Maximilians University Munich, Department Biology II, Großhaderner Str. 2, 82152 Martinsried, Germany*
+
+&#9993; For correspondence regarding the code in this repository, please contact: Luke (<a href= "mailto:luke.eberhart[at]bi.mpg.de">luke.eberhart[at]bi.mpg.de</a>)
+
+&#9993; For correspondence regarding the data and study system, please contact: Wolfgang (<a href= "mailto:wgoymann@bi.mpg.de">wgoymann[at]bi.mpg.de</a>) or Safari (<a href= "mailto:safariignas@yahoo.co.uk">safariignas[at]yahoo.co.uk</a>)
+
+#### *Submitted* 
+
+In this repository you can find all the raw data and code needed to reproduce our investigation of sex-specific early-life demographic pathways of black coucals (_Centropus grillii_) and white-browed coucals (_Centropus superciliosus_) monitored over a 15-year period in south-western Tanzania.
 
 #### Repository Contents
 [**`R/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/R)

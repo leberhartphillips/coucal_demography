@@ -50,6 +50,7 @@
 
 # playground
 !R/junkyard/sensitivity_JSR_workflow.R
+!R/analysis/analysis_body_condition_fledglings.R
 
 !data/mol_sex.rds
 !data/chicks_2006_2020.rds
@@ -87,8 +88,9 @@
 !products/tables/Table_S5.png
 !products/tables/Table_S6.png
 
-!Rmd/Supplementary_File_1/Supplementary_File_1.html
-!Rmd/Supplementary_File_1/Supplementary_File_1.Rmd
+!Supplementary_Material_A.html
+!Supplementary_Material_A.qmd
+
 
 !license.txt
 .Rproj.user
