@@ -80,15 +80,6 @@ lapply(packages_required_in_project, require, character.only = TRUE)
 ## Plotting Theme
 
 ```{r}
-# Find fonts from computer that you want. Use regular expressions to do this
-# For example, load all fonts that are 'candara' or 'Candara'
-extrafont::font_import(pattern = "[V/v]erdana", prompt = FALSE)
-
-# check which fonts were loaded
-extrafont::fonts()
-extrafont::fonttable()
-extrafont::loadfonts() # load these into R
-
 # define the plotting theme to be used in subsequent ggplots
 luke_theme <- 
   theme_bw() +
@@ -109,6 +100,15 @@ luke_theme <-
     legend.position = c(0.1, 0.9)
   )
 
+# Find fonts from computer that you want. Use regular expressions to do this
+# For example, load all fonts that are 'candara' or 'Candara'
+extrafont::font_import(pattern = "[V/v]erdana", prompt = FALSE)
+
+# check which fonts were loaded
+extrafont::fonts()
+extrafont::fonttable()
+extrafont::loadfonts() # load these into R
+
 # set plotting color palettes
 sex_pal2 <- 
   c(pull(ggthemes_data$wsj$palettes$colors6[3,2]), 
@@ -120,6 +120,7 @@ sex_pal3 <-
     pull(ggthemes_data$wsj$palettes$colors6[2,2]))
 plot_palette_sex <- RColorBrewer::brewer.pal(8, "Dark2")[c(2,1)]
 plot_palette_species <- RColorBrewer::brewer.pal(8, "Dark2")[c(3,7)]
+# plot_palette_nest_order <- c("black", "#f03b20")
 
 # specify the facet labels for each species
 # specify the population names for labelling in the plot
@@ -129,6 +130,16 @@ species_names <- c(
 sex_names <- c(
   'female' = "Females",
   'male' = "Males")
+# polyandry.labs <- c("Polyandrous", "Monogamous")
+# names(polyandry.labs) <- c("poly", "mono")
+
+# image of a plover egg
+# egg_image <- image_read("media/plover_egg.png")
+# egg_image_grob <- rasterGrob(egg_image, interpolate = TRUE, height = 0.6)
+
+# some nice color palettes
+# show_col(wsj_pal(palette = "rgby")(6))
+# ggthemes_data$wsj
 
 # color of mean estimate point in forest plots
 col_all <- "#2E3440"
@@ -148,6 +159,13 @@ bootstrap_hazard_data <-
     
     max_time <- max_time
     
+    # # sample a new offspring dataset containing only one nest
+    # # member per draw
+    # offspring_boot <-
+    #   offspring %>%
+    #   group_by(nest_ID) %>%
+    #   sample_n(1)
+    # 
     hzd_ss_try_M_lambda <- 1.1
     hzd_ss_try_F_lambda <- 1.1
 
@@ -224,6 +242,21 @@ bootstrap_hazard_data <-
       
     }
     
+    # hzd_ss_try_M <- sshzd(Surv(exit, event, entry) ~ exit,
+    #                       data = filter(offspring_boot, sex == "M"),
+    #                       alpha = alpha_value)
+    # 
+    # hzd_ss_try_F <- sshzd(Surv(exit, event, entry) ~ exit,
+    #                       data = filter(offspring_boot, sex == "F"),
+    #                       alpha = alpha_value)
+    # 
+    # hzd_ss_try_M_lambda <- hzd_ss_try_M$lambda
+    # 
+    # 
+    # hzd_ss_try_F_lambda <- hzd_ss_try_F$lambda
+
+    
+    
     # make a list of these two datasets, which will be used in the next function
     out <- list(offspring_boot = offspring_boot, 
                 iter = num_boot + ((iter_add - 1) * niter),
@@ -235,16 +268,476 @@ bootstrap_hazard_data <-
 
 ```
 
-### adult_CJS_bootstrap_data()
-randomly samples a new adult mark-recapture dataset the same size as the original, with replacement
+### bootstrap_survival_ASR()
 
-arguments:
-adult: the capture history data to bootstrap (in standard MARK inp format)
-num_boot: the number of the boot (do not specify)
-species: species of coucal (e.g., "WBC")
-iter_add: number to add to iteration (only specify in case of parallel simulations)
+runs the survival analyses and estimates the ASR of the bootstrapped sample created from bootstrap_data().
 
 ```{r}
+# coucal_boot_list :  the output list from bootstrap_data()
+# breeding season)
+# immigrant_pop_size : the number of immigrants entering the population at the 
+# start of each season
+# default is a vector with 10 individuals in each stage)
+# h : harem size index
+# k : clutch size
+# HSR : hatching sex ratio
+# num_boot : bootstrap number in the loop (do not specify)
+# species : coucal species name
+# iter_add : addition to bootstrap number in the loop (do not specify)
+# bootstrap_name : ID of bootstrap iteration (do not specify)
+# flight_age : age at first flight in days
+# first_year : the first year of the study period (e.g., 2001)
+# egg_survival : hatching probability
+
+bootstrap_survival_ASR <- 
+  function(coucal_boot_list, num_boot, iter_add,
+           egg_survival,
+           ISR,
+           # immigrant_pop_size = 100,
+           HSR = 0.5,
+           h,
+           k,
+           flight_age,
+           first_year,
+           bootstrap_name,
+           species,
+           prefix_number) {
+    
+    # specify the bootstrapped data samples (from the previous function)
+    nestling_ch <- coucal_boot_list[["nestling_boot"]]
+    fledgling_ch <- coucal_boot_list[["fledgling_boot"]]
+    adult_ch <- coucal_boot_list[["adult_boot"]]
+    
+    # clean up capture histories
+    fledgling_ch <- 
+      fledgling_ch %>% 
+      ungroup() %>% 
+      as.data.frame()
+    
+    nestling_ch <-    
+      nestling_ch %>% 
+      ungroup() %>% 
+      as.data.frame()
+    
+    adult_ch <-    
+      adult_ch %>% 
+      ungroup() %>% 
+      as.data.frame() %>% 
+      mutate(sex = as.factor(sex))
+    
+    # process the nestling data as a "Known" fate analysis
+    coucal_nestling.proc <- process.data(data = nestling_ch,
+                                         model = "Known",
+                                         groups = c("sex"))
+    
+    # make design matrix
+    coucal_nestling.ddl <- 
+      make.design.data(coucal_nestling.proc)
+    
+    # create polynomial variations of time
+    time <- c(1:(coucal_nestling.proc$nocc[1]+1))
+    Quadratic <- time^2
+    Cubic <- time^3
+    quad_time <- data.frame(time, Quadratic, Cubic)
+    
+    # merge polynomials to the design matrix
+    coucal_nestling.ddl$S <- 
+      merge_design.covariates(coucal_nestling.ddl$S, quad_time, 
+                              bygroup = FALSE, bytime = TRUE)
+    
+    # process the fledgling data as a "Burnham"  analysis
+    coucal_fledgling.proc <- process.data(data = fledgling_ch,
+                                          model = "Burnham",
+                                          groups = c("sex"))
+    
+    # make design matrix
+    coucal_fledgling.ddl <- 
+      make.design.data(coucal_fledgling.proc)
+    
+    # create polynomial variations of time
+    time <- c(1:(coucal_fledgling.proc$nocc[1]+1))
+    Quadratic <- time^2
+    Cubic <- time^3
+    quad_time <- data.frame(time, Quadratic, Cubic)
+    
+    # merge polynomials to the design matrix
+    coucal_fledgling.ddl$S <- 
+      merge_design.covariates(coucal_fledgling.ddl$S, quad_time, 
+                              bygroup = FALSE, bytime = TRUE)
+    coucal_fledgling.ddl$F <- 
+      merge_design.covariates(coucal_fledgling.ddl$F, quad_time, 
+                              bygroup = FALSE, bytime = TRUE)
+    coucal_fledgling.ddl$r <- 
+      merge_design.covariates(coucal_fledgling.ddl$r, quad_time, 
+                              bygroup = FALSE, bytime = TRUE)
+    
+    # process the adult data as a "CJS"  analysis
+    coucal_adult.proc <- RMark::process.data(adult_ch, 
+                                             model = "CJS",
+                                             groups = c("sex"),
+                                             begin.time = first_year)
+    
+    # Create the design matrix from the processed mark-recapture datasets
+    coucal_adult.ddl <- RMark::make.design.data(coucal_adult.proc)
+    
+    nestling_survival_analysis_run <- 
+      function(proc_data, design_data){
+        # apriori model components for
+        # S (survival probability):
+        
+        # sex- and age-specific model
+        S.sexXTime = list(formula = ~sex * Time)
+        
+        # sex- and age-specific model (quadratic)
+        S.sexXQuad = list(formula = ~sex * Quadratic)
+        
+        # sex- and age-specific model (cubic)
+        S.sexXCube = list(formula = ~sex * Cubic)
+        
+        # create model list for all a priori models above
+        cml <- create.model.list("Known")
+        
+        # run the models in program MARK
+        model.list <-  RMark::mark.wrapper(cml, data = proc_data, 
+                                           ddl = design_data, delete = TRUE, 
+                                           wrap = FALSE, threads = 1, brief = TRUE,
+                                           silent = TRUE, output = FALSE, prefix = prefix_number)
+        
+        # output the model list and store the results
+        return(model.list)
+      }
+    
+    fledgling_survival_analysis_run <- 
+      function(proc_data, design_data){
+        # apriori model components for
+        # S (survival probability):
+        
+        # sex- and age-specific model
+        S.sexXTime = list(formula = ~sex * Time)
+        
+        # sex- and age-specific model (quadratic)
+        S.sexXQuad = list(formula = ~sex * Quadratic)
+        
+        # sex- and age-specific model (cubic)
+        S.sexXCube = list(formula = ~sex * Cubic)
+        
+        # p (encounter probability):
+        # null model
+        p.dot = list(formula = ~1)
+        
+        # sex-specific model
+        p.sex = list(formula = ~sex)
+        
+        # age-specific model
+        p.Time = list(formula = ~Time)
+        
+        # F (site fidelity probability):
+        # null model
+        F.dot = list(formula = ~1)
+        
+        # sex-specific model
+        F.sex = list(formula = ~sex)
+        
+        # age-specific model
+        F.Time = list(formula = ~Time)
+        
+        # r (recovery probability)
+        # null model
+        r.dot = list(formula = ~1)
+        
+        # sex-specific model
+        r.sex = list(formula = ~sex)
+        
+        # age-specific model
+        r.time = list(formula = ~Time)
+        
+        # create model list for all a priori models above
+        cml <- create.model.list("Burnham")
+        
+        # run the models in program MARK
+        model.list <-  RMark::mark.wrapper(cml, data = proc_data, 
+                                           ddl = design_data, delete = TRUE, 
+                                           wrap = FALSE, threads = 1, brief = TRUE,
+                                           silent = TRUE, output = FALSE, prefix = prefix_number)
+        
+        # output the model list and sotre the results
+        return(model.list)
+      }
+    
+    adult_survival_analysis_run = 
+      function(proc_data, design_data){
+        # sex- and stage-specific survival:
+        Phi.sex = list(formula = ~ sex) 
+        
+        # Models exploring variation in encounter probability
+        # constant:
+        p.dot = list(formula =  ~ 1)
+        
+        # sex-dependent:
+        p.sex = list(formula =  ~ sex)
+        
+        # factorial variation across year:
+        p.Time = list(formula =  ~ time)
+        
+        # additive effects of sex and factorial year:
+        p.sex_Time = list(formula =  ~ sex + time)
+        
+        # create a list of candidate models for all the a models above that begin with 
+        # either "Phi." or "p."
+        cml <-  RMark::create.model.list("CJS")
+        
+        # specify the data, design matrix, delete unneeded output files, and 
+        # run the models in Program MARK
+        model.list <-  RMark::mark.wrapper(cml, data = proc_data, 
+                                           ddl = design_data, delete = TRUE, 
+                                           wrap = FALSE, threads = 1, brief = TRUE,
+                                           silent = TRUE, output = FALSE, prefix = prefix_number)
+        
+        # output the model list and sotre the results
+        return(model.list)
+      }
+    
+    # Run the models on the bootstrapped data
+    nestling_survival_analysis_out <-
+      nestling_survival_analysis_run(proc_data = coucal_nestling.proc,
+                                     design_data = coucal_nestling.ddl)
+    
+    fledgling_survival_analysis_out <-
+      fledgling_survival_analysis_run(proc_data = coucal_fledgling.proc,
+                                      design_data = coucal_fledgling.ddl)
+    
+    adult_survival_analysis_out <-
+      adult_survival_analysis_run(proc_data = coucal_adult.proc,
+                                  design_data = coucal_adult.ddl)
+    
+    extract_top_model_output <- 
+      function(rmark_output, stage_name, top_model = TRUE, mod_num){
+        # Find the model number for the first ranked model of the AIC table
+        if(top_model == TRUE){
+          mod_num <- 
+            as.numeric(rownames(rmark_output$model.table[1,]))
+        }
+        
+        else{
+          mod_num <- mod_num
+        }
+        
+        # extract and wrangle reals from model output 
+        if(stage_name == "nestling"){
+          reals <- 
+            rmark_output[[mod_num]]$results$real %>% 
+            bind_cols(data.frame(str_split_fixed(rownames(.), " ", 
+                                                 n = 5)), .) %>% 
+            mutate(age = as.integer(unlist(str_extract_all(X3,"[0-9]+"))),
+                   sex = as.factor(ifelse(unlist(str_extract_all(X2,"[FM]")) == "F", 
+                                          "Female", "Male"))) %>% 
+            select(sex, age, estimate) %>% 
+            mutate(iter = num_boot + ((iter_add - 1) * niter),
+                   species = species)
+        }
+        else if(stage_name == "fledgling"){
+          reals <- 
+            rmark_output[[mod_num]]$results$real %>% 
+            bind_cols(data.frame(str_split_fixed(rownames(.), " ", 
+                                                 n = 5)), .) %>% 
+            mutate(age = as.integer(unlist(str_extract_all(X4,"[0-9]+"))),
+                   sex = as.factor(ifelse(unlist(str_extract_all(X2,"[FM]")) == "F", 
+                                          "Female", "Male"))) %>% 
+            filter(X1 == "S") %>% 
+            select(sex, age, estimate) %>% 
+            mutate(iter = num_boot + ((iter_add - 1) * niter),
+                   species = species)
+        }
+        else{
+          reals <- 
+            rmark_output[[mod_num]]$results$real %>% 
+            bind_cols(data.frame(str_split_fixed(rownames(.), " ", n = 5)), .) %>% 
+            filter(X1 == "Phi") %>% 
+            mutate(sex = as.factor(ifelse(unlist(str_extract_all(X2,"[FM]")) == "F", "Female", "Male"))) %>% 
+            select(sex, estimate) %>% 
+            mutate(iter = num_boot + ((iter_add - 1) * niter),
+                   species = species)
+        }
+        
+        # extract and wrangle the beta estimates from the model output
+        betas <- 
+          rmark_output[[mod_num]]$results$beta %>% 
+          mutate(statistic = rownames(.),
+                 iter = num_boot + ((iter_add - 1) * niter),
+                 species = species) %>% 
+          mutate(parameter = ifelse(grepl(x = statistic, pattern = "S:"), "S",
+                                    ifelse(grepl(x = statistic, pattern = "p:"), "p",
+                                           ifelse(grepl(x = statistic, pattern = "r:"), "r",
+                                                  ifelse(grepl(x = statistic, pattern = "F:"), "F", 
+                                                         ifelse(grepl(x = statistic, pattern = "Phi:"), "Phi", "XXX"))))),
+                 variable = ifelse(grepl(x = statistic, pattern = "Intercept"), "Intercept",
+                                   ifelse(grepl(x = statistic, pattern = "sexM:Cubic"), "sexM:Cubic",
+                                          ifelse(grepl(x = statistic, pattern = "sexM:Quadratic"), "sexM:Quadratic",
+                                                 ifelse(grepl(x = statistic, pattern = "sexM:Time"), "sexM:Time",
+                                                        ifelse(grepl(x = statistic, pattern = "sexM"), "sexM",
+                                                               ifelse(grepl(x = statistic, pattern = "Time"), "Time",
+                                                                      ifelse(grepl(x = statistic, pattern = "Cubic"), "Cubic", 
+                                                                             ifelse(grepl(x = statistic, pattern = "Quadratic"), "Quadratic","XXX"))))))))) %>% 
+          select(-statistic)
+        
+        # consolidate the AIC model selection results
+        AIC_table <- 
+          rmark_output$model.table %>% 
+          mutate(iter = num_boot + ((iter_add - 1) * niter),
+                 species = species,
+                 model_no_orig = as.numeric(rownames(.))) %>% 
+          mutate(model_no_rank = as.numeric(rownames(.)))
+        
+        # consolidate the all output into a list
+        survival_model_output_list <- 
+          list(reals = reals,
+               betas = betas,
+               AIC_table = AIC_table)
+        
+        survival_model_output_list
+      }
+    
+    # extract and format survival rates from juvenile and adult model output
+    nestling_survival_model_output_list <- 
+      extract_top_model_output(rmark_output = nestling_survival_analysis_out, 
+                               stage_name = "nestling")
+    
+    fledgling_survival_model_output_list <- 
+      extract_top_model_output(rmark_output = fledgling_survival_analysis_out, 
+                               stage_name = "fledgling")
+    
+    adult_survival_model_output_list <- 
+      extract_top_model_output(rmark_output = adult_survival_analysis_out, 
+                               stage_name = "adult")
+    
+    # transform the daily nestling survival (DCS) to apparent fledgling success
+    # by calculating the product of all DCS estimates:
+    coucal_nestling_survival <-
+      nestling_survival_model_output_list$reals %>% 
+      group_by(sex) %>% 
+      dplyr::summarise(value = prod(estimate), .groups = 'drop') %>%
+      mutate(stage = "nestling",
+             rate = "survival")
+    
+    coucal_groundling_survival <-
+      fledgling_survival_model_output_list$reals %>% 
+      filter(age < flight_age) %>% 
+      group_by(sex) %>% 
+      dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+      mutate(stage = "groundling",
+             rate = "survival")
+    
+    coucal_fledgling_survival <-
+      fledgling_survival_model_output_list$reals %>% 
+      filter(age >= flight_age) %>% 
+      group_by(sex) %>% 
+      dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+      mutate(stage = "fledgling",
+             rate = "survival")
+    
+    coucal_adult_survival <-
+      adult_survival_model_output_list$reals %>%
+      select(-species, -iter) %>% 
+      mutate(stage = "adult",
+             rate = "survival") %>% 
+      dplyr::rename(value = estimate)
+    
+    # adult_F_immigrants <- immigrant_pop_size * (1 - ISR)
+    # adult_M_immigrants <- immigrant_pop_size * ISR
+    
+    # coucal_adult_immigration <- 
+    #   data.frame(sex = c("Female", "Male"),
+    #              value = c(adult_F_immigrants, adult_M_immigrants),
+    #              stage = c("adult"),
+    #              rate = c("immigration"))
+    
+    coucal_egg_survival <- 
+      data.frame(sex = NA,
+                 value = egg_survival,
+                 stage = c("egg"),
+                 rate = c("survival"))
+    
+    # Bind the juvenile and adult dataframe with the nestlings
+    coucal_vital_rates <- 
+      bind_rows(coucal_egg_survival,
+                coucal_nestling_survival,
+                coucal_groundling_survival,
+                coucal_fledgling_survival,
+                coucal_adult_survival
+                # coucal_adult_immigration
+                ) %>% 
+      as.data.frame() %>% 
+      mutate(iter = num_boot + ((iter_add - 1) * niter),
+             species = species)
+    
+    # Create a list of demographic rates from the survival analyses above
+    demographic_rates <- list(Egg_survival = coucal_vital_rates[1, 2],
+                              F_Nestling_survival = coucal_vital_rates[2, 2],
+                              F_Groundling_survival = coucal_vital_rates[4, 2],
+                              F_Fledgling_survival = coucal_vital_rates[6, 2],
+                              F_Adult_survival = coucal_vital_rates[8, 2],
+                              # F_Adult_immigration = coucal_vital_rates[10, 2],
+                              M_Nestling_survival = coucal_vital_rates[3, 2],
+                              M_Groundling_survival = coucal_vital_rates[5, 2],
+                              M_Fledgling_survival = coucal_vital_rates[7, 2],
+                              M_Adult_survival = coucal_vital_rates[9, 2],
+                              # M_Adult_immigration = coucal_vital_rates[11, 2],
+                              
+                              # Define hatching sex ratio
+                              HSR = HSR,
+                              
+                              # Define the mating system (h), and clutch size (k)
+                              h = h,
+                              k = k)
+    
+    # Build matrix based on rates specified in the list above
+    demographic_matrix <- coucal_matrix(demographic_rates)
+    
+    # populate sex-specific adult immigration matrix
+    # immigration_vector <- matrix(data = c(0, demographic_rates$F_Adult_immigration, 
+    #                                       0, demographic_rates$M_Adult_immigration), 
+    #                              nrow = 4, ncol = 1)
+    
+    # Determine the ASR at the stable stage distribution
+    ASR_SSD <- matrix_ASR(M = demographic_matrix,
+                          h = demographic_rates$h,
+                          HSR = demographic_rates$HSR, iterations = 1000,
+                          num_boot = num_boot,
+                          species = species,
+                          # immigrant_pop_size = immigrant_pop_size,
+                          # ISR = ISR, 
+                          iter_add = 1)
+    
+    # Extract ASR
+    ASR_estimate <- ASR_SSD$ASR
+    
+    # make a list of all the results from this iteration
+    bootstrap_results_list <- 
+      list(nestling_survival_model_output = nestling_survival_model_output_list, 
+           fledgling_survival_model_output = fledgling_survival_model_output_list,
+           adult_survival_model_output = adult_survival_model_output_list,
+           coucal_vital_rates = coucal_vital_rates,
+           ASR_SSD = ASR_SSD,
+           bootstrapped_data = coucal_boot_list)
+    
+    # extract file directory
+    file_directory <- paste0(getwd(), "/output/bootstraps/raw/", bootstrap_name, "_", num_boot, ".Rds")
+    
+    # save the results of the iteration
+    save(bootstrap_results_list, file = file_directory)
+    
+    bootstrap_results_list
+  }
+```
+
+### adult_CJS_bootstrap_data()
+
+```{r}
+# bootstrap_data() randomly samples with replacement from the nestling and 
+# fledgling datasets, while making sure that if an individual existing in both
+# datasets was sampled from the nestling data it was also sampled in the 
+# fledgling data. Each bootstrapped sample has the same length as the original
+# data.
 adult_CJS_bootstrap_data <- 
   function(adult, num_boot, species, iter_add) {
   
@@ -254,7 +747,7 @@ adult_CJS_bootstrap_data <-
     adult %>%
     sample_n(nrow(.), replace = TRUE)
   
-  # make a list of the new dataset, iteration, species
+  # make a list of these two datasets, which will be used in the next function
   out <- list(adult_boot = adult_boot,
               iter = num_boot + ((iter_add - 1) * niter),
               species = species)
@@ -262,22 +755,36 @@ adult_CJS_bootstrap_data <-
 ```
 
 ### bootstrap_adult_survival_CJS()
-runs the CJS survival analyses using the the bootstrapped sample created from adult_CJS_bootstrap_data(). 
 
-arguments:
-coucal_boot_list:  the output list from adult_CJS_bootstrap_data()
-num_boot: bootstrap number in the loop (do not specify)
-iter_add: addition to bootstrap number in the loop (do not specify)
-first_year: the first year of the study period (e.g., 2001)
-bootstrap_name: ID of bootstrap iteration (do not specify)
-species: coucal species name (e.g., "BWC")
-prefix_number: prefix to add to file output (e.g., "boot_one_")
-out_directory = directory where output should go (e.g., "tmp")
 ```{r}
+# bootstrap_survival_ASR() runs the survival analyses and estimates the ASR of 
+# the bootstrapped sample created from bootstrap_data(). 
+# coucal_boot_list :  the output list from bootstrap_data()
+# ISR : the immigration sex ratio (i.e., the observed adult sex ratio during the
+# breeding season)
+# immigrant_pop_size : the number of immigrants entering the population at the 
+# start of each season
+# default is a vector with 10 individuals in each stage)
+# h : harem size index
+# k : clutch size
+# HSR : hatching sex ratio
+# num_boot : bootstrap number in the loop (do not specify)
+# species : coucal species name
+# iter_add : addition to bootstrap number in the loop (do not specify)
+# bootstrap_name : ID of bootstrap iteration (do not specify)
+# flight_age : age at first flight in days
+# first_year : the first year of the study period (e.g., 2001)
+# egg_survival : hatching probability
+
 bootstrap_adult_survival_CJS <- 
-  function(coucal_boot_list, 
-           num_boot, 
-           iter_add,
+  function(coucal_boot_list, num_boot, iter_add,
+           # egg_survival,
+           # ISR,
+           # immigrant_pop_size = 100,
+           # HSR = 0.5,
+           # h,
+           # k,
+           # flight_age,
            first_year,
            bootstrap_name,
            species,
@@ -422,7 +929,6 @@ bootstrap_adult_survival_CJS <-
 ```
 
 ### run_bootstrap_adult_survival_CJS
-run the bootstrap and the CJS analysis (passed through the pbsapply function), see arguments defined above
 
 ```{r}
 run_bootstrap_adult_survival_CJS <- function(adult, num_boot, species, iter_add,
@@ -450,9 +956,10 @@ run_bootstrap_adult_survival_CJS <- function(adult, num_boot, species, iter_add,
 ```
 
 ### surv_boot_out_wrangle()
-loads all the output rds files from the parallel adult CJS bootstrapping procedure and consolidates them into a single object for further analysis
+
 ```{r}
-# boot_out_wrangle() 
+# boot_out_wrangle() loads all the four output rds files from the parallel 
+# bootstraping proceedure and consolidates them into a single object
 surv_boot_out_wrangle <- function(species, niter, output_directory = "output/bootstraps/"){
   
   # specify directory string
@@ -489,7 +996,7 @@ surv_boot_out_wrangle <- function(species, niter, output_directory = "output/boo
 ```
 
 ### approx_sd()
-derive the approximate sd give the 95% CIs
+
 ```{r}
 # function to approximate the sd given the 95% CIs
 approx_sd <- function(x1, x2){
@@ -498,18 +1005,26 @@ approx_sd <- function(x1, x2){
 ```
 
 ### matrix_ASR()
-calculates the ASR of the population based on the two-sex two-stage projection matrix built by the coucal_matrix() function (below).
-Arguments:
-M: a two-sex x by x projection matrix
-n: x-lengthed vector representing starting stage distribution (the default is a vector with 10 individuals in each stage)
-h: harem size index (default is 1, monogamy)
-k: clutch size (default is 4 eggs, mean for both coucal species)
-interations: number of time steps to run the simulation
-HSR: hatching sex ratio (expressed as the proportion of male chicks)
-num_boot: bootstrap number (do not specify)
-species: coucal species name
-iter_add: addition to bootstrap number (do not specify)
+
 ```{r}
+# matrix_ASR() calculates the ASR of the population based on the two-sex 
+# two-stage projection matrix built by the plover_matrix() function. Arguments 
+# in the function include:
+# M : two sex x by x projection matrix
+# ISR : the immigration sex ratio (i.e., the observed adult sex ratio during the
+# breeding season)
+# immigrant_pop_size : the number of immigrants entering the population at the 
+# start opf each season
+# n : x lengthed vector representing starting stage distribution (the 
+# default is a vector with 10 individuals in each stage)
+# h : harem size index
+# k : clutch size
+# interations : number of time steps to run the simulation
+# HSR : hatching sex ratio
+# num_boot : bootstrap number (do not specify)
+# species : coucal species name
+# iter_add : addition to bootstrap number (do not specify)
+
 matrix_ASR <-
   function(M, #ISR, immigrant_pop_size, 
            n = rep(10, nrow(M)), h = 1, k = 4, 
@@ -533,6 +1048,10 @@ matrix_ASR <-
     # an empty t vector to store the population sizes
     pop <- numeric(t)
     
+    # I <- matrix(data = c(0, immigrant_pop_size * (1 - ISR), 
+    #                      0, immigrant_pop_size * ISR), 
+    #             nrow = 4, ncol = 1)
+    
     # for loop that goes through each of t time steps
     for (i in 1:t) {
       
@@ -542,11 +1061,12 @@ matrix_ASR <-
       # population size at time t
       pop[i] <- sum(n)
       
-      # number of male adults at time t = (number alive at t-1) * (survival rate)
-      M2 <- stage[4, i] * M["M_Adult", "M_Adult"]
+      # number of male adults at time t = (number alive at t-1) * 
+      # (survival rate) + (number of immigrants entering at t)
+      M2 <- stage[4, i] * M["M_Adult", "M_Adult"] #+ I[4, 1]
       
       # number of female adults at time t
-      F2 <- stage[2, i] * M["F_Adult", "F_Adult"]
+      F2 <- stage[2, i] * M["F_Adult", "F_Adult"] #+ I[2, 1]
       
       # Female freq-dep fecundity of Female chicks
       M["F_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * (1 - HSR))
@@ -561,7 +1081,20 @@ matrix_ASR <-
       M["M_1st_year", "M_Adult"] <- ((k * F2) / (M2 + (F2 / h)) * HSR)
       
       # define the new n (i.e., new stage distribution at time t)
-      n <- M %*% n
+      n <- M %*% n # + I)
+      
+      # # number of female 1st years produced
+      # N_female_1st_years <-
+      #   (n[2] * M["F_1st_year", "F_Adult"] * M["F_Adult", "F_1st_year"]) +
+      #   (n[4] * M["F_1st_year", "M_Adult"] * M["F_Adult", "F_1st_year"])
+      # 
+      # 
+      # # number of male 1st years produced
+      # N_male_1st_years <-
+      #   (n[2] * M["M_1st_year", "F_Adult"] * M["M_Adult", "M_1st_year"]) +
+      #   (n[4] * M["M_1st_year", "M_Adult"] * M["M_Adult", "M_1st_year"])
+      # # 
+      # sex_ratio_1st_years <- N_male_1st_years / (N_male_1st_years + N_female_1st_years)
       
       # define rownames of stage matrix
       rownames(stage) <- rownames(M)
@@ -601,9 +1134,11 @@ matrix_ASR <-
 ```
 
 ### coucal_matrix()
-builds the two-sex Lefkovitch matrix using the vital rates specified in the *demographic_rates* object.
-This function also give the option to specify a one-sex matrix for analytical comparisons between 2- and 1-sex matrix models
+
 ```{r}
+# coucal_matrix() builds the two-sex Lefkovitch matrix using the vital rates 
+# specified in the *demographic_rates* object.
+
 coucal_matrix <- 
   function(demographic_rates_, two_sex = TRUE){
     if(two_sex){
@@ -664,18 +1199,69 @@ coucal_matrix <-
   }
 ```
 
-### bootstrap_hazard_data()
-randomly samples one sibling per nest from the offspring survival dataset
+### hazard_boot_out_wrangle()
 ```{r}
-# bootstrap_hazard_data() 
+# single_model_boot_out_wrangle() loads all the output rds files from the 
+# run_known_fate_boot() output and consolidates them into a single object for 
+# plotting, etc.
+hazard_boot_out_wrangle <- 
+  function(species, niter, output_dir, rds_file){
+    
+    # specify directory string
+    boot_path <- paste0(output_dir, species, rds_file, ".rds")
+    
+    # load each of the four bootstrap output files
+    bootstrap_out <- readRDS(file = boot_path)
+    
+    # bind all the fledgling daily survival rates output together
+    hazard_rates_boot <-
+      do.call(rbind, lapply(seq(from = 1, to = niter, by = 1),
+                            function(x) bootstrap_out["offspring_hazard_rates", x]$offspring_hazard_rates)) %>%
+      arrange(iter, sex, age)
+    
+    # bind all the ASR estimates output together
+    ASR_ests_boot <-
+      do.call(rbind, lapply(seq(from = 1, to = niter, by = 1),
+                            function(x) bootstrap_out["ASR_SSD", x]$ASR_SSD$ASR)) %>% 
+      as.data.frame() %>% 
+      mutate(species = species)
+    
+    # bind all the ASR estimates output together
+    vital_rate_ests_boot <-
+      do.call(rbind, lapply(seq(from = 1, to = niter, by = 1),
+                            function(x) bootstrap_out["coucal_vital_rates", x]$coucal_vital_rates))
+    
+    # tidy all the bound data together into a mega list of results
+    boot_out_tidy <- 
+      list(hazard_rates_boot = hazard_rates_boot,
+           vital_rate_ests_boot = vital_rate_ests_boot,
+           ASR_ests_boot = ASR_ests_boot)
+    
+    boot_out_tidy
+  }
+```
+
+### bootstrap_hazard_data()
+
+```{r}
+# bootstrap_hazard_data() randomly samples one sibling per nest from the 
+# offspring survival dataset
 bootstrap_hazard_data <- 
   function(offspring, num_boot, species, iter_add, alpha_value, max_time, niter) {
+    
     
     # set attempt to 0 at start of each loop
     attempt <- 0
     
     max_time <- max_time
     
+    # # sample a new offspring dataset containing only one nest
+    # # member per draw
+    # offspring_boot <-
+    #   offspring %>%
+    #   group_by(nest_ID) %>%
+    #   sample_n(1)
+    # 
     hzd_ss_try_M_lambda <- 1.1
     hzd_ss_try_F_lambda <- 1.1
 
@@ -685,7 +1271,8 @@ bootstrap_hazard_data <-
       # next attempt
       attempt <- attempt + 1
 
-      # sample a new offspring dataset containing only one nest member per draw
+      # sample a new offspring dataset containing only one nest
+      # member per draw
       offspring_boot <-
         offspring %>%
         group_by(nest_ID) %>%
@@ -751,7 +1338,22 @@ bootstrap_hazard_data <-
       
     }
     
-    # make a list including elements that will be used in the next function
+    # hzd_ss_try_M <- sshzd(Surv(exit, event, entry) ~ exit,
+    #                       data = filter(offspring_boot, sex == "M"),
+    #                       alpha = alpha_value)
+    # 
+    # hzd_ss_try_F <- sshzd(Surv(exit, event, entry) ~ exit,
+    #                       data = filter(offspring_boot, sex == "F"),
+    #                       alpha = alpha_value)
+    # 
+    # hzd_ss_try_M_lambda <- hzd_ss_try_M$lambda
+    # 
+    # 
+    # hzd_ss_try_F_lambda <- hzd_ss_try_F$lambda
+
+    
+    
+    # make a list of these two datasets, which will be used in the next function
     out <- list(offspring_boot = offspring_boot, 
                 iter = num_boot + ((iter_add - 1) * niter),
                 species = species,
@@ -763,8 +1365,11 @@ bootstrap_hazard_data <-
 ```
 
 ### run_bootstrap_juv_hazd_ad_surv_ASR()
-initiates the bootstrap_hazard_data() and runs the juvenile survival analysis to derive sex- and stage-specific survival rates. Then constructs the matrix model with the rates and projects this into the future to aquire the stable stage distribution and derive the ASR.
+
 ```{r}
+# run_bootstrap_survival_ASR() initiates the bootstrap_data() and 
+# bootstrap_survival_ASR() functions in sequence.
+
 run_bootstrap_juv_hazd_ad_surv_ASR <- function(num_boot, 
                                                offspring,
                                                k_dist, 
@@ -773,6 +1378,8 @@ run_bootstrap_juv_hazd_ad_surv_ASR <- function(num_boot,
                                                egg_surv_dist, 
                                                flight_age_distF,
                                                flight_age_distM,
+                                               # ISR_dist, 
+                                               # immigrant_pop_size, 
                                                fledge_age_distF, 
                                                fledge_age_distM,
                                                bootstrap_name, 
@@ -1033,50 +1640,13 @@ run_bootstrap_juv_hazd_ad_surv_ASR <- function(num_boot,
 
 ```
 
-### hazard_boot_out_wrangle()
-loads all the output rds files from the run_bootstrap_juv_hazd_ad_surv_ASR() output and consolidates them into a single object for plotting, etc.
-```{r}
-# single_model_boot_out_wrangle() 
-hazard_boot_out_wrangle <- 
-  function(species, niter, output_dir, rds_file){
-    
-    # specify directory string
-    boot_path <- paste0(output_dir, species, rds_file, ".rds")
-    
-    # load each of the four bootstrap output files
-    bootstrap_out <- readRDS(file = boot_path)
-    
-    # bind all the fledgling daily survival rates output together
-    hazard_rates_boot <-
-      do.call(rbind, lapply(seq(from = 1, to = niter, by = 1),
-                            function(x) bootstrap_out["offspring_hazard_rates", x]$offspring_hazard_rates)) %>%
-      arrange(iter, sex, age)
-    
-    # bind all the ASR estimates output together
-    ASR_ests_boot <-
-      do.call(rbind, lapply(seq(from = 1, to = niter, by = 1),
-                            function(x) bootstrap_out["ASR_SSD", x]$ASR_SSD$ASR)) %>% 
-      as.data.frame() %>% 
-      mutate(species = species)
-    
-    # bind all the ASR estimates output together
-    vital_rate_ests_boot <-
-      do.call(rbind, lapply(seq(from = 1, to = niter, by = 1),
-                            function(x) bootstrap_out["coucal_vital_rates", x]$coucal_vital_rates))
-    
-    # tidy all the bound data together into a mega list of results
-    boot_out_tidy <- 
-      list(hazard_rates_boot = hazard_rates_boot,
-           vital_rate_ests_boot = vital_rate_ests_boot,
-           ASR_ests_boot = ASR_ests_boot)
-    
-    boot_out_tidy
-  }
-```
-
 ### sex_diff_hazard()
-takes the list of results from the bootstrap proceedure and calculates the sex difference in survival at each life stage for each iteration
+
 ```{r}
+# sex_diff_survival() takes the list of results from the bootstrap proceedure
+# and calculates the sex difference in survival at each life stage for each
+# iteration
+
 sex_diff_hazard <- function(boot_out_list, niter) {
   
   # make an empty datarame to store the results
@@ -1111,6 +1681,9 @@ sex_diff_hazard <- function(boot_out_list, niter) {
                   stage == "nestling" & rate == "survival" & sex == "Female"), value) -
       pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
                   stage == "nestling" & rate == "survival" & sex == "Male"), value)
+    ISR <- 
+      0.5 - pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
+                  stage == "ISR"), value)
     HSR <- 
       0.5 - pull(filter(boot_out_list$vital_rate_ests_boot[which(boot_out_list$vital_rate_ests_boot$iter == i), ], 
                   stage == "HSR"), value)
@@ -1122,6 +1695,7 @@ sex_diff_hazard <- function(boot_out_list, niter) {
     sex_diff_surv_output[i, 2] <- ifelse(length(Fledgling) > 0, Fledgling, NA)
     sex_diff_surv_output[i, 3] <- ifelse(length(Groundling) > 0, Groundling, NA)
     sex_diff_surv_output[i, 4] <- ifelse(length(Nestling) > 0, Nestling, NA)
+    sex_diff_surv_output[i, 5] <- ifelse(length(ISR) > 0, ISR, NA)
     sex_diff_surv_output[i, 6] <- ifelse(length(HSR) > 0, HSR, NA)
     sex_diff_surv_output[i, 7] <- ifelse(length(h) > 0, h, NA)
     
@@ -1135,6 +1709,20 @@ sex_diff_hazard <- function(boot_out_list, niter) {
   # return the output
   sex_diff_surv_output
 }
+```
+
+
+```{r}
+# source("R/functions/function_run_bootstrap_adult_survival_CJS().R")
+# source("R/functions/function_surv_boot_out_wrangle().R")
+# # source("R/functions/function_bootstrap_hazard_data().R")
+# source("R/functions/function_bootstrap_juv_hazd_ad_surv_ASR().R")
+# source("R/functions/function_run_bootstrap_juv_hazd_ad_surv_ASR().R")
+# source("R/functions/function_sex_diff_hazard().R")
+# source("R/functions/function_coucal_matrix().R")
+# source("R/functions/function_matrix_ASR().R")
+# source("R/functions/function_coucal_matrix().R")
+# source("R/functions/function_approx_sd().R")
 ```
 
 ## Wrangling survival data
@@ -1211,7 +1799,15 @@ detect_dat <-
   mutate(sex = ifelse(sex == "female", "F", ifelse(sex == "male", "M", "XXX")),
          age_status = ifelse(age_status == "adult", "A", ifelse(age_status == "juvenile", "J", "XXX")),
          ring_ID = str_replace_all(string = ring_ID, fixed(" "), "")) %>%
-  mutate(across(c("species", "ring_ID", "sex", "site", "age_status"), as.factor))
+  mutate(across(c("species", "ring_ID", "sex", "site", "age_status"), as.factor)) #%>% 
+  # mutate(sex = ifelse(str_detect(ring_ID, pattern = "[Ff]emale"), "F",
+  #                     ifelse(str_detect(ring_ID, pattern = "[Mm]ale"), "M", sex))) %>% 
+  # tail()
+
+
+detect_dat %>% 
+  dplyr::select(-date) %>% 
+  distinct()
 
 # assess the first and last year of study for each species
 detect_dat %>% 
@@ -1346,14 +1942,31 @@ mating_dat <-
   # read raw data
   read.csv("data/raw/Coucal_Nr_mates_2001_2019_20200123.csv", 
            header = TRUE, stringsAsFactors = FALSE, na.strings = c("", " ", "NA")) %>% 
-
+  # str()
+  
   # make all entries lower case for consistency
   mutate(site = tolower(site),
          age_status = tolower(age_status),
          sex = tolower(sex)) %>% 
+  
+  # select variables of interest
+  # select(species, ring_ID, lab_no, sex, year, site, nest_ID, pref_age, 
+  #        Fledged_status, postf_age, postf_status, ageC, lay_date, hatch_order) %>% 
+  
+  # remove all white space from data
+  # mutate(across(everything(), ~str_trim(~.x))) %>%
+  # mutate(across(where(is.character), str_remove_all, pattern = fixed(" ")))
+  # mutate(across(.cols = everything(), 
+  #               .fns = str_replace_all(
+  #                 string = ..1, 
+  #                 pattern = " ", 
+  #                 replacement = ""))) %>% 
 
   # specify empty data as NA
   mutate(across(everything(), ~gsub("^$|^ $", NA, .x))) %>% 
+  
+  # exclude all individuals that died in the nest
+  # filter(Fledged_status == "yes") %>% 
   
   # classify columns
   mutate(sex = as.factor(sex),
@@ -1377,18 +1990,98 @@ mating_dat <-
   # consolidate to variables of interest
   dplyr::select(year, species, ind_ID, site, sex, age_status, Nr_partners, ID_partner.s.)
 
-# sex_specific_mating_system <- 
-#   mating_dat %>% 
-#   group_by(species, sex) %>% 
-#   dplyr::summarise(mean_annual_no_mates = mean(Nr_partners, na.rm = TRUE),
-#                    var_annual_no_mates = var(Nr_partners, na.rm = TRUE),
-#                    median_annual_no_mates = median(Nr_partners, na.rm = TRUE),
-#                    sd_annual_no_mates = sd(Nr_partners, na.rm = TRUE),
-#                    n = n_distinct(ind_ID), .groups = "drop",
-#                    n_years = n_distinct(year)) %>% 
-#   mutate(sample_size = paste("n = ", n, sep = ""),
-#          species_plot = ifelse(species == "WBC", 1.9, 1.1),
-#          species_lab = ifelse(species == "WBC", 1, 2))
+# # ***
+# #   ## Quantifying mating system
+# #   
+# #   To put our estimate of ASR in the context of breeding behavior, we quantified sex bias in mating system based on behavioral obersvations from the field. Females of *Charadrius* species are more likely to desert broods and seek serial mates than males.  Thus, we expected that females would have more mates per year than males. 
+# # 
+# # **Step one: wrangle the data**
+# #   remove any cases in which one mate was not identified (i.e., "NA")
+# # ```{r}
+# mating_df <- 
+#   breeding_data[which(!is.na(breeding_data$female) & !is.na(breeding_data$male)),]
+# # ```
+# # determine the number of families used in the mating system analysis (i.e. the sample size)
+# # ```{r}
+# length(unique(mating_df$family_ID))
+# # ```
+# # bind the two mates together to make a unique pair
+# # ```{r}
+# mating_df$pair <- as.factor(paste(mating_df$female, mating_df$male, sep = "-"))
+# # ```
+# # determine how many mating attempts each individual had each year
+# # ```{r}
+# females <- reshape2::dcast(mating_df, female + population ~ year)
+# males <- reshape2::dcast(mating_df, male + population ~ year)
+# # ```
+# # determine how many different mates each individual had over their lifetime in the population
+# # ```{r}
+# number_males_p_female <- 
+#   stats::aggregate(male ~ female, mating_df, function(x) length(unique(x)))
+# number_females_p_male <- 
+#   stats::aggregate(female ~ male, mating_df, function(x) length(unique(x)))
+# # ```
+# # join these two dataframes together and define as numeric
+# # ```{r}
+# females <- dplyr::inner_join(females, number_males_p_female)
+# females[,c(3:16)] <- 
+#   lapply(females[,c(3:16)], as.numeric)
+# males <- dplyr::inner_join(males, number_females_p_male)
+# males[,c(3:16)] <- 
+#   lapply(males[,c(3:16)], as.numeric)
+# # ```
+# # calculate the total number of mating attempts over each individual's lifetime
+# # ```{r}
+# females$attempts <- rowSums(females[, c(3:16)])
+# males$attempts <- rowSums(males[, c(3:16)])
+# # ```
+# # calculate the number of years breeding
+# # ```{r}
+# females$years <- rowSums(females[, c(3:16)] > 0)
+# males$years <- rowSums(males[, c(3:16)] > 0)
+# # ```
+# # filter out all individuals that only had one mating attempt
+# # ```{r}
+# females_no_1 <- dplyr::filter(females, male  != 1 | years != 1 | attempts != 1)
+# males_no_1 <- dplyr::filter(males, female  != 1 | years != 1 | attempts != 1)
+# # ```
+# # tidy up dataframes then bind them together
+# # ```{r}
+# females_no_1$sex <- "Female"
+# females_no_1$sex <- as.factor(females_no_1$sex)
+# colnames(females_no_1)[c(1,17)] <- c("focal", "mate")
+# males_no_1$sex <- "Male"
+# males_no_1$sex <- as.factor(males_no_1$sex)
+# colnames(males_no_1)[c(1,17)] <- c("focal", "mate")
+# mating <- rbind(females_no_1, males_no_1)
+# # ```
+# # calculate the number of mates per year
+# # ```{r}
+# mating$no_mates_per_year <- mating$mate/mating$years
+# # corrected for long-term monogamy (i.e., mu in Eq. 4), whereby 1 is given to 
+# # individuals that have <1 mate per year
+# 
+# mating_dat %>% 
+#   group_by(species, sex)
+# 
+# mating$no_mates_per_year_mono <- 
+#   ifelse(mating$no_mates_per_year < 1, 1, mating$no_mates_per_year)
+# # ```
+# # summarise the matings by sex and determine "h", the average annual number of mates per female
+# # ```{r}
+sex_specific_mating_system <- 
+  mating_dat %>% 
+  group_by(species, sex) %>% 
+  dplyr::summarise(mean_annual_no_mates = mean(Nr_partners, na.rm = TRUE),
+                   var_annual_no_mates = var(Nr_partners, na.rm = TRUE),
+                   median_annual_no_mates = median(Nr_partners, na.rm = TRUE),
+                   sd_annual_no_mates = sd(Nr_partners, na.rm = TRUE),
+                   n = n_distinct(ind_ID), .groups = "drop",
+                   n_years = n_distinct(year)) %>% 
+  mutate(sample_size = paste("n = ", n, sep = ""),
+         species_plot = ifelse(species == "WBC", 1.9, 1.1),
+         species_lab = ifelse(species == "WBC", 1, 2))
+
 
 sex_specific_mating_system <- 
   mating_dat %>% 
@@ -1409,10 +2102,12 @@ sex_specific_mating_system <-
 # To obtain a female-based h index for each population the inverse of the mean 
 # mu is calculated (i.e., Eq. 2 in manuscript)
 BC_h <- 
+  # 1/
   as.numeric(sex_specific_mating_system[which(
     sex_specific_mating_system$sex == "female" &
     sex_specific_mating_system$species == "BC"), "mean_annual_no_mates"])
 WBC_h <- 
+  # 1/
   as.numeric(sex_specific_mating_system[which(
     sex_specific_mating_system$sex == "female" &
     sex_specific_mating_system$species == "WBC"), "mean_annual_no_mates"])
@@ -1427,12 +2122,56 @@ WBC_h_sd <-
     sex_specific_mating_system$sex == "female" &
       sex_specific_mating_system$species == "WBC"), "sd_annual_no_mates"])
 
+# BC_h_upper_sd <- 
+#   # 1/
+#   (as.numeric(sex_specific_mating_system[which(
+#     sex_specific_mating_system$sex == "female" &
+#       sex_specific_mating_system$species == "BC"), "mean_annual_no_mates"]) -
+#       as.numeric(sex_specific_mating_system[which(
+#         sex_specific_mating_system$sex == "female" &
+#           sex_specific_mating_system$species == "BC"), "sd_annual_no_mates"]))
+# WBC_h_upper_sd <- 
+#   1/(as.numeric(sex_specific_mating_system[which(
+#     sex_specific_mating_system$sex == "female" &
+#       sex_specific_mating_system$species == "WBC"), "mean_annual_no_mates"]) -
+#       as.numeric(sex_specific_mating_system[which(
+#         sex_specific_mating_system$sex == "female" &
+#           sex_specific_mating_system$species == "WBC"), "sd_annual_no_mates"]))
+# 
+# BC_h_lower_sd <- 
+#   1/(as.numeric(sex_specific_mating_system[which(
+#     sex_specific_mating_system$sex == "female" &
+#       sex_specific_mating_system$species == "BC"), "mean_annual_no_mates"]) +
+#       as.numeric(sex_specific_mating_system[which(
+#         sex_specific_mating_system$sex == "female" &
+#           sex_specific_mating_system$species == "BC"), "sd_annual_no_mates"]))
+# WBC_h_lower_sd <- 
+#   1/(as.numeric(sex_specific_mating_system[which(
+#     sex_specific_mating_system$sex == "female" &
+#       sex_specific_mating_system$species == "WBC"), "mean_annual_no_mates"]) +
+#       as.numeric(sex_specific_mating_system[which(
+#         sex_specific_mating_system$sex == "female" &
+#           sex_specific_mating_system$species == "WBC"), "sd_annual_no_mates"]))
+
 coucal_mating_system <- 
   data.frame(trait = c("mating_system"),
              species = c("BC", "WBC"),
              mean = c(BC_h, WBC_h),
              sd = c(BC_h_sd, WBC_h_sd))
+             # upper_h_sd = c(BC_h_upper_sd, WBC_h_upper_sd),
+             # lower_h_sd = c(BC_h_lower_sd, WBC_h_lower_sd))
 
+# display the h values for each population (these are used in the mating function 
+# of the matrix model)
+# BC_h
+# WBC_h
+
+# ```
+# 
+# Figure S3: plot the sex-specific distributions of mating system
+# ```{r, fig.width=6, fig.height=3, fig.align="center"}
+# define the factor levels of the population variable so that the populations are in an 
+# order that reflects the ASR (male biased to female biased)
 mating_dat$species <- 
   factor(mating_dat$species ,
          levels = c("BC",
@@ -1650,6 +2389,7 @@ rm(egg_data, egg_surv_data, BC_egg_survival, WBC_egg_survival)
 ```
 
 ### Hatching sex ratio
+
 ```{r}
 egg_data <-
   read_xls("data/raw/Egg_surv_data_2001_2019_20210524.xls", 
@@ -1699,6 +2439,15 @@ mod_HSR_WBC <-
                 (1| nest_ID), 
               data = filter(egg_HSR_data, species == "WBC"), 
               family = binomial)
+
+# extract model coefficients
+# mod_HSR_BC_coefs <- 
+#   model_parameters(mod_HSR_BC) %>%
+#   as.data.frame(.)
+# 
+# mod_HSR_WBC_coefs <- 
+#   model_parameters(mod_HSR_WBC) %>%
+#   as.data.frame(.)
 
 # # run tidy bootstrap to obtain model diagnostics
 tidy_mod_HSR_BC <-
@@ -1752,14 +2501,20 @@ HSR_plot <-
                   group = species,
                   fill = species, color = species),
               width = 0.02, alpha = 0.2, shape = 19) +
+  # coord_flip() +
   luke_theme +
   theme(legend.position = "none",
         panel.border = element_blank(),
         strip.background = element_blank(),
+        # strip.text = element_text(size = 12, face = "italic"),
         axis.title.x = element_blank(),
         axis.text.x = element_text(12),
-
+        # axis.title.y = element_blank(),
+        # axis.text.y = element_blank(),
+        # axis.ticks.x = element_blank(),
+        # axis.ticks.y = element_blank(),
         legend.background = element_blank(),
+        # panel.grid = element_blank(),
         panel.grid.major.y = element_line(colour = "grey70", size = 0.1),
         plot.title = element_text(hjust = 0.5, face = "italic")) +
   scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.25)) +
@@ -1795,6 +2550,16 @@ fledge_dat <-
   filter(!is.na(Fledge_age)) %>% 
   mutate(Ind_ID = paste(Nst_No, Ring_ID, lab_no, sep = "_")) %>%
   mutate(sex_plot = ifelse(sex == "M", 2.2, 0.8))
+
+# # assess normality of "days_since_fledging" variable
+# ggplot(data = fledge_dat) +
+#   geom_histogram(aes(Fledge_age), binwidth = 1) +
+#   facet_grid(sex ~ species)
+
+# check for repeated measures within nest
+# fledge_dat %>% 
+#   group_by(nest_ID) %>% 
+#   dplyr::summarise(n_ = n())
  
 #### Modeling (BC) ----
 # "Fledge_age" as dependent variable, interaction with sex and species
@@ -1829,6 +2594,9 @@ predict_WBC <-
           re.form = NA, 
           se.fit = TRUE, 
           nsim = 1000)
+
+# plot effect sizes of model
+# plot(allEffects(fledge_age_mod))
 
 # tidy up estimates
 coucal_fledge_age <- 
@@ -1907,6 +2675,24 @@ flight_dat <-
                 Ring_ID = Ind_ID) %>% 
   mutate(sex_plot = ifelse(sex == "Male", 2.2, 0.8))
 
+# assess normality of "days_since_fledging" variable
+# ggplot(data = flight_dat) +
+#   geom_histogram(aes(days_since_fledging), binwidth = 3) +
+#   facet_grid(Sex ~ Spp)
+
+# check for repeated measures within nest
+# flight_dat %>% 
+#   group_by(Nst_No) %>% 
+#   dplyr::summarise(n_ = n())
+
+# see here for a blog about how to bootstrap the model to estimate 
+# the 95% confidence interval around the predictions:
+# http://www.remkoduursma.com/post/2017-06-15-bootpredictlme4/
+
+# install and load the "bootpredictlme4" package
+# devtools::install_github("remkoduursma/bootpredictlme4")
+# library(bootpredictlme4)
+
 #### Modeling (WBC) ----
 # "flight_age" as dependent variable, 
 # "sex", "fledge_age", and "fledge_mass" as independent
@@ -1927,6 +2713,10 @@ predict_WBC <-
         se.fit = TRUE, 
         nsim = 1000)
 
+# boot_WBC_flight_age <- 
+#   bootMer(mod_flight_age_WBC, nsim = 1000, 
+#           FUN = function(x) predict(x, newdata = new_data_BC, re.form = NA))
+
 #### Modeling (BC) ----
 # "flight_age" as dependent variable, 
 # "sex", "fledge_age", and "fledge_mass" as independent
@@ -1946,6 +2736,24 @@ predict_BC <-
         re.form = NA, 
         se.fit = TRUE, 
         nsim = 1000)
+
+# boot_BC_flight_age <- 
+#   bootMer(mod_flight_age_BC, nsim = 1000, 
+#           FUN = function(x) predict(x, newdata = new_data_BC, re.form = NA))
+# 
+# hist(boot_BC_flight_age$t, 
+#      breaks=seq(16,26,by=0.5),
+#      # ylim=c(0,25),
+#      main="", xlab="Reaction time at 5 Days (ms)",
+#      col="cornflowerblue")
+# box()
+
+# plot effect sizes of model
+# plot(allEffects(flight_mod))
+
+# source("R/analysis/analysis_flight_age.R")
+# 
+# coucal_flight_age
 
 coucal_flight_age <- 
   data.frame(trait = c("flight_age"),
@@ -2003,6 +2811,75 @@ coucal_flight_age <-
                      approx_sd(x1 = CI_low, x2 = CI_high),
                      CI_low))
 
+# coucal_flight_age_plus_fledge <-
+#   data.frame(trait = c("flight_age"),
+#              species = c("BC", "BC", "WBC", "WBC"),
+#              sex = c("F", "M", "F", "M"),
+#              mean = c(mod_flight_age_coefs[1, c(2)] + pull(filter(coucal_flight_age, species == "BC" & sex == "F"), mean),
+#                       (mod_flight_age_coefs[1, c(2)] + mod_flight_age_coefs[2, c(2)] + pull(filter(coucal_flight_age, species == "BC" & sex == "M"), mean)),
+#                       (mod_flight_age_coefs[1, c(2)] + mod_flight_age_coefs[3, c(2)] + pull(filter(coucal_flight_age, species == "WBC" & sex == "F"), mean)),
+#                       (mod_flight_age_coefs[1, c(2)] + mod_flight_age_coefs[3, c(2)] + mod_flight_age_coefs[4, c(2)] + mod_flight_age_coefs[2, c(2)]) + pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), mean)),
+#              CI_low = c(mod_flight_age_coefs[1, c(5)] + pull(filter(coucal_flight_age, species == "BC" & sex == "F"), mean),
+#                         (mod_flight_age_coefs[1, c(5)] + mod_flight_age_coefs[2, c(5)]) + pull(filter(coucal_flight_age, species == "BC" & sex == "M"), mean),
+#                         (mod_flight_age_coefs[1, c(5)] + mod_flight_age_coefs[3, c(5)]) + pull(filter(coucal_flight_age, species == "WBC" & sex == "F"), mean),
+#                         (mod_flight_age_coefs[1, c(5)] + mod_flight_age_coefs[3, c(5)] + mod_flight_age_coefs[4, c(5)] + mod_flight_age_coefs[2, c(5)]) + pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), mean)),
+#              CI_high = c(mod_flight_age_coefs[1, c(6)] + pull(filter(coucal_flight_age, species == "BC" & sex == "F"), mean),
+#                          (mod_flight_age_coefs[1, c(6)] + mod_flight_age_coefs[2, c(6)]) + pull(filter(coucal_flight_age, species == "BC" & sex == "M"), mean),
+#                          (mod_flight_age_coefs[1, c(6)] + mod_flight_age_coefs[3, c(6)]) + pull(filter(coucal_flight_age, species == "WBC" & sex == "F"), mean),
+#                          (mod_flight_age_coefs[1, c(6)] + mod_flight_age_coefs[3, c(6)] + mod_flight_age_coefs[4, c(6)] + mod_flight_age_coefs[2, c(6)]) + pull(filter(coucal_flight_age, species == "WBC" & sex == "M"), mean)),
+#              n_inds = c(filter(flight_dat, species == "BC" & Sex == "Female") %>%
+#                           summarise(n_ = n_distinct(Ind_ID)) %>%
+#                           pull(n_),
+#                         filter(flight_dat, Spp == "BC" & Sex == "Male") %>%
+#                           summarise(n_ = n_distinct(Ind_ID)) %>%
+#                           pull(n_),
+#                         filter(flight_dat, Spp == "WBC" & Sex == "Female") %>%
+#                           summarise(n_ = n_distinct(Ind_ID)) %>%
+#                           pull(n_),
+#                         filter(flight_dat, Spp == "BC" & Sex == "Male") %>%
+#                           summarise(n_ = n_distinct(Ind_ID)) %>%
+#                           pull(n_)),
+#              n_nests = c(filter(flight_dat, Spp == "BC" & Sex == "Female") %>%
+#                            summarise(n_ = n_distinct(Nst_No)) %>%
+#                            pull(n_),
+#                          filter(flight_dat, Spp == "BC" & Sex == "Male") %>%
+#                            summarise(n_ = n_distinct(Nst_No)) %>%
+#                            pull(n_),
+#                          filter(flight_dat, Spp == "WBC" & Sex == "Female") %>%
+#                            summarise(n_ = n_distinct(Nst_No)) %>%
+#                            pull(n_),
+#                          filter(flight_dat, Spp == "WBC" & Sex == "Male") %>%
+#                            summarise(n_ = n_distinct(Nst_No)) %>%
+#                            pull(n_)),
+#              n_years = c(filter(flight_dat, Spp == "BC" & Sex == "Female") %>%
+#                            summarise(n_ = n_distinct(Year)) %>%
+#                            pull(n_),
+#                          filter(flight_dat, Spp == "BC" & Sex == "Male") %>%
+#                            summarise(n_ = n_distinct(Year)) %>%
+#                            pull(n_),
+#                          filter(flight_dat, Spp == "WBC" & Sex == "Female") %>%
+#                            summarise(n_ = n_distinct(Year)) %>%
+#                            pull(n_),
+#                          filter(flight_dat, Spp == "WBC" & Sex == "Male") %>%
+#                            summarise(n_ = n_distinct(Year)) %>%
+#                            pull(n_))) %>%
+#   mutate(sd = ifelse(!is.na(CI_low),
+#                      approx_sd(x1 = CI_low, x2 = CI_high),
+#                      CI_low))
+
+#### "Age_1st_Flight" as dependent variable ----
+# perhaps not as informative as "days_since_fledging" since it doesn't control
+# for the age when the chick left the nest
+# flight_mod2 <- lmer(Age_1st_Flight ~ Sex * Spp +
+#                       (1 | Nst_No) + (1 | Year),
+#                     data = flight_dat)
+# 
+# flight_mod2_coefs <-
+#   model_parameters(flight_mod2) %>%
+#   as.data.frame(.)
+# 
+# plot(allEffects(flight_mod2))
+
 rm(flight_dat, mod_flight_age_WBC, mod_flight_age_BC, new_data_BC, new_data_WBC,
    predict_BC, predict_WBC)
 ```
@@ -2014,6 +2891,7 @@ parameter_distributions <-
   bind_rows(coucal_egg_survival,
             coucal_clutch_size,
             coucal_HSR,
+            # coucal_ISR,
             coucal_mating_system,
             coucal_fledge_age,
             coucal_flight_age) %>% 
@@ -2049,6 +2927,9 @@ h_dist_BC = c(pull(filter(coucal_mating_system, species == "BC"), mean),
 egg_surv_dist_BC = c(pull(filter(coucal_egg_survival, species == "BC"), mean),
                      pull(filter(coucal_egg_survival, species == "BC"), sd))
 
+# ISR_dist_BC = c(pull(filter(coucal_ISR, species == "BC"), mean), 
+#                 pull(filter(coucal_ISR, species == "BC"), sd))
+
 fledge_age_distF_BC = c(pull(filter(coucal_fledge_age, species == "BC" & sex == "F"), 
                              mean), 
                         pull(filter(coucal_fledge_age, species == "BC" & sex == "F"), 
@@ -2070,12 +2951,429 @@ flight_age_distM_BC = c(pull(filter(coucal_flight_age, species == "BC" & sex == 
                              sd))
 ```
 
-run stochastic demographic simulation
+run stochastic demographic simulation UP TO HERE 20.11.2023
+### TESTING
+```{r}
+# offspring = status_dat_all %>% filter(species == "BC")
+# adult_surival_boot_out = trans_WBC_adult_surival_boot_out
+# bootstrap_name = "BC_boot_w_trans_WBC_ad_surv_stoc"
+# species = "BC"
+# iter_add = 1
+# prefix_number = "boot_w_trans_WBC_ad_surv_stoc_no"
+# max_time = 70
+# niter = niter
+# alpha_value = 1.4
+# k_dist = k_dist_BC
+# HSR_dist = HSR_dist_BC
+# h_dist = h_dist_BC
+# egg_surv_dist = egg_surv_dist_BC
+# # ISR_dist = ISR_dist_BC
+# fledge_age_distF = fledge_age_distF_BC
+# fledge_age_distM = fledge_age_distM_BC
+# flight_age_distF = flight_age_distF_BC
+# flight_age_distM = flight_age_distM_BC
+# output.directory = "/tmp"
+# num_boot = 1
+# coucal_boot_list <- 
+#   bootstrap_hazard_data(offspring = offspring, 
+#                         num_boot = num_boot,
+#                         species = species, 
+#                         iter_add = iter_add,
+#                         alpha_value = alpha_value,
+#                         max_time = max_time,
+#                         niter = niter)
+# 
+#  # specify the bootstrapped data samples (from the previous function)
+#     offspring_data <- coucal_boot_list[["offspring_boot"]]
+#     
+#     # clean up capture histories
+#     offspring_data <-    
+#       offspring_data %>% 
+#       ungroup() %>% 
+#       as.data.frame()
+#     
+#     # fit smoothed spline of hazard function for either sex
+#     M_haz_ss <- sshzd(Surv(exit, event, entry) ~ exit, 
+#                       data = filter(offspring_data, sex == "M"), 
+#                       alpha = alpha_value)
+# 
+#     F_haz_ss <- sshzd(Surv(exit, event, entry) ~ exit, 
+#                       data = filter(offspring_data, sex == "F"), 
+#                       alpha = alpha_value)
+# 
+#     haz_ss_lambda <- list(Male_haz_ss_lambda = M_haz_ss$lambda,
+#                           Female_haz_ss_lambda = F_haz_ss$lambda)
+#     
+#     # extract fitted estimates from the spline function
+#     M_haz_ss_curve <- 
+#       hzdcurve.sshzd(object = M_haz_ss, time = coucal_boot_list[["time_vector"]], se = TRUE)
+#     
+#     F_haz_ss_curve <- 
+#       hzdcurve.sshzd(object = F_haz_ss, time = coucal_boot_list[["time_vector"]], se = TRUE)
+#     
+#     haz_ss_curve <- 
+#       expand.grid(species = species, 
+#                   age = coucal_boot_list[["time_vector"]],
+#                   sex = c("Male", "Female")) %>% 
+#       mutate(fit = c(M_haz_ss_curve$fit, F_haz_ss_curve$fit),
+#              se = c(M_haz_ss_curve$se, F_haz_ss_curve$se)) %>% 
+#       mutate(estimate = 1 - fit,
+#              upper = 1 - fit * exp(1.96 * se),
+#              lower = 1 - fit / exp(1.96 * se),
+#              iter = num_boot)
+#     
+#     # transform the daily nestling survival (DCS) to apparent fledgling success
+#     # by calculating the product of all DCS estimates:
+#     
+#     fledge_ageM <- rnorm(1, fledge_age_distM[1], fledge_age_distM[2])
+#     fledge_ageF <- rnorm(1, fledge_age_distF[1], fledge_age_distF[2])
+#     
+#     flight_ageM <- rnorm(1, flight_age_distM[1], flight_age_distM[2])
+#     flight_ageF <- rnorm(1, flight_age_distF[1], flight_age_distF[2])
+#     
+#     coucal_nestling_survivalF <-
+#       haz_ss_curve %>% 
+#       filter(age <= fledge_ageF & sex == "Female") %>% 
+#       group_by(sex) %>%
+#       dplyr::summarise(value = prod(estimate), .groups = 'drop') %>%
+#       mutate(stage = "nestling",
+#              rate = "survival")
+#     
+#     coucal_nestling_survivalM <-
+#       haz_ss_curve %>% 
+#       filter(age <= fledge_ageM & sex == "Male") %>% 
+#       group_by(sex) %>%
+#       dplyr::summarise(value = prod(estimate), .groups = 'drop') %>%
+#       mutate(stage = "nestling",
+#              rate = "survival")
+#     
+#     coucal_nestling_survival <- 
+#       bind_rows(coucal_nestling_survivalF, coucal_nestling_survivalM)
+#     
+#     coucal_groundling_survivalF <-
+#       haz_ss_curve %>% 
+#       filter(age < (flight_ageF + fledge_ageF) & age > fledge_ageF & sex == "Female") %>% 
+#       group_by(sex) %>% 
+#       dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+#       mutate(stage = "groundling",
+#              rate = "survival")
+#     
+#     coucal_groundling_survivalM <-
+#       haz_ss_curve %>% 
+#       filter(age < (flight_ageM + fledge_ageM) & age > fledge_ageM & sex == "Male") %>% 
+#       group_by(sex) %>% 
+#       dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+#       mutate(stage = "groundling",
+#              rate = "survival")
+#     
+#     coucal_groundling_survival <- 
+#       bind_rows(coucal_groundling_survivalF, coucal_groundling_survivalM)
+#     
+#     coucal_fledgling_survivalF <-
+#       haz_ss_curve %>% 
+#       filter(age >= (flight_ageF + fledge_ageF) & sex == "Female") %>% 
+#       group_by(sex) %>% 
+#       dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+#       mutate(stage = "fledgling",
+#              rate = "survival")
+#     
+#     coucal_fledgling_survivalM <-
+#       haz_ss_curve %>% 
+#       filter(age >= (flight_ageM + fledge_ageM) & sex == "Male") %>% 
+#       group_by(sex) %>% 
+#       dplyr::summarise(value = prod(estimate), .groups = 'drop') %>% 
+#       mutate(stage = "fledgling",
+#              rate = "survival")
+#     
+#     coucal_fledgling_survival <- 
+#       bind_rows(coucal_fledgling_survivalF, coucal_fledgling_survivalM)
+#     
+#     coucal_adult_survival <-
+#       filter(adult_surival_boot_out, iter == sample(1:niter, 1)) %>%
+#       dplyr::select(-species, -iter) %>%
+#       mutate(stage = "adult",
+#              rate = "survival")
+#     
+#     egg_survival <- rnorm(1, egg_surv_dist[1], egg_surv_dist[2])
+#     
+#     coucal_egg_survival <- 
+#       data.frame(sex = NA,
+#                  value = egg_survival,
+#                  stage = c("egg"),
+#                  rate = c("survival"))
+#     
+#     coucal_mating_system <- 
+#       data.frame(sex = NA,
+#                  value = 1/rnorm(1, h_dist[1], h_dist[2]),
+#                  stage = c("h"),
+#                  rate = c("fecundity"))
+#     
+#     coucal_clutch_size <- 
+#       data.frame(sex = NA,
+#                  value = rnorm(1, k_dist[1], k_dist[2]),
+#                  stage = c("k"),
+#                  rate = c("fecundity"))
+#     
+#     coucal_HSR <- 
+#       data.frame(sex = NA,
+#                  value = rnorm(1, HSR_dist[1], HSR_dist[2]),
+#                  stage = c("HSR"),
+#                  rate = c("fecundity"))
+#     
+#     coucal_flight_age <- 
+#       data.frame(sex = c("Female", "Male"),
+#                  value = c(flight_ageF, flight_ageM),
+#                  stage = c("flight_age"),
+#                  rate = c("development"))
+#     
+#     coucal_fledge_age <- 
+#       data.frame(sex = c("Female", "Male"),
+#                  value = c(fledge_ageF, fledge_ageM),
+#                  stage = c("fledge_age"),
+#                  rate = c("development"))
+#     
+#     # Bind the juvenile and adult dataframe with the nestlings
+#     coucal_vital_rates <- 
+#       bind_rows(coucal_egg_survival,
+#                 coucal_nestling_survival,
+#                 coucal_groundling_survival,
+#                 coucal_fledgling_survival,
+#                 coucal_adult_survival,
+#                 coucal_mating_system,
+#                 coucal_clutch_size,
+#                 coucal_HSR,
+#                 coucal_flight_age,
+#                 coucal_fledge_age) %>% 
+#       as.data.frame() %>% 
+#       mutate(iter = num_boot, #+ ((iter_add - 1) * niter),
+#              species = species) %>% 
+#       arrange(sex, rate, stage)
+#     
+#     # Create a list of demographic rates from the survival analyses above
+#     demographic_rates <- list(Egg_survival = pull(filter(coucal_vital_rates, stage == "egg"), value),
+#                               F_Nestling_survival = pull(filter(coucal_vital_rates, 
+#                                                                 stage == "nestling" & rate == "survival" & sex == "Female"), 
+#                                                          value),
+#                               F_Groundling_survival = pull(filter(coucal_vital_rates, 
+#                                                                   stage == "groundling" & rate == "survival" & sex == "Female"), 
+#                                                            value),
+#                               F_Fledgling_survival = pull(filter(coucal_vital_rates, 
+#                                                                  stage == "fledgling" & rate == "survival" & sex == "Female"), 
+#                                                           value),
+#                               F_Adult_survival = pull(filter(coucal_vital_rates, 
+#                                                              stage == "adult" & rate == "survival" & sex == "Female"), 
+#                                                       value),
+#                               # F_Adult_immigration = pull(filter(coucal_vital_rates, 
+#                               #                                   stage == "adult" & rate == "immigration" & sex == "Female"), 
+#                               #                            value),
+#                               M_Nestling_survival = pull(filter(coucal_vital_rates, 
+#                                                                 stage == "nestling" & rate == "survival" & sex == "Male"), 
+#                                                          value),
+#                               M_Groundling_survival = pull(filter(coucal_vital_rates, 
+#                                                                   stage == "groundling" & rate == "survival" & sex == "Male"), 
+#                                                            value),
+#                               M_Fledgling_survival = pull(filter(coucal_vital_rates, 
+#                                                                  stage == "fledgling" & rate == "survival" & sex == "Male"), 
+#                                                           value),
+#                               M_Adult_survival = pull(filter(coucal_vital_rates, 
+#                                                              stage == "adult" & rate == "survival" & sex == "Male"), 
+#                                                       value),
+#                               # M_Adult_immigration = pull(filter(coucal_vital_rates, 
+#                               #                                   stage == "adult" & rate == "immigration" & sex == "Male"), 
+#                               #                            value),
+#                               
+#                               # Define hatching sex ratio
+#                               HSR = pull(filter(coucal_vital_rates, stage == "HSR"), value),
+#                               
+#                               # Define the mating system (h), and clutch size (k)
+#                               h = pull(filter(coucal_vital_rates, stage == "h"), value),
+#                               k = pull(filter(coucal_vital_rates, stage == "k"), value))
+#     
+#     # Build matrix based on rates specified in the list above
+#     # demographic_matrix <- coucal_matrix(demographic_rates_ = demographic_rates)
+#     # Define coucal life-stages of the coucal matrix model
+#       stages <- c("F_1st_year",  "F_Adult",  "M_1st_year",  "M_Adult")
+#       demographic_rates_ = demographic_rates
+#       # Build the 4x4 matrix
+#       demographic_matrix <- 
+#         matrix(c(
+#           
+#           # top row of matrix
+#           0, NA, 0, NA, 
+#           
+#           # second row of matrix
+#           (demographic_rates_$Egg_survival * 
+#              demographic_rates_$F_Nestling_survival * 
+#              demographic_rates_$F_Groundling_survival *
+#              demographic_rates_$F_Fledgling_survival),
+#           demographic_rates_$F_Adult_survival,
+#           0, 0,
+#           
+#           # third row of matrix
+#           0, NA, 0, NA, 
+#           
+#           # fourth row of matrix
+#           0, 0, 
+#           (demographic_rates_$Egg_survival * 
+#              demographic_rates_$M_Nestling_survival * 
+#              demographic_rates_$M_Groundling_survival *
+#              demographic_rates_$M_Fledgling_survival),
+#           demographic_rates_$M_Adult_survival),
+#           nrow = length(stages), byrow = TRUE,
+#           dimnames = list(stages, stages))
+#       M = demographic_matrix
+#       h = demographic_rates$h
+#       HSR = demographic_rates$HSR
+#       iterations = 100
+#       num_boot = num_boot
+#       species = species
+#       # immigrant_pop_size = immigrant_pop_size,
+#       # ISR = ISR, 
+#       iter_add = 1
+#       n = rep(10, nrow(demographic_matrix))
+#       # Number of stages in matrix
+#     x <- length(n)
+#     
+#     # Number of time steps to simulate
+#     t <- iterations
+#     
+#     # an empty t by x matrix to store the stage distributions
+#     stage <- matrix(data = numeric(x * t), nrow = x, ncol = t)
+#     
+#     # an empty t by x matrix to store the stage-specific frequencies
+#     pop_dist <- matrix(data = numeric(x * t), nrow = x, ncol = t)
+#     rownames(pop_dist) <- rownames(M)
+#     colnames(pop_dist) <- 0:(t - 1)
+#     
+#     # an empty t vector to store the population sizes
+#     pop <- numeric(t)
+#     
+#     # I <- matrix(data = c(0, immigrant_pop_size * (1 - ISR), 
+#     #                      0, immigrant_pop_size * ISR), 
+#     #             nrow = 4, ncol = 1)
+#     
+#     # for loop that goes through each of t time steps
+#     for (i in 1:t) {
+#       
+#       # stage distribution at time t
+#       stage[,i] <- n
+#       
+#       # population size at time t
+#       pop[i] <- sum(n)
+#       
+#       # number of male adults at time t = (number alive at t-1) * 
+#       # (survival rate) + (number of immigrants entering at t)
+#       M2 <- stage[4, i] * M["M_Adult", "M_Adult"] #+ I[4, 1]
+#       
+#       # number of female adults at time t
+#       F2 <- stage[2, i] * M["F_Adult", "F_Adult"] #+ I[2, 1]
+#       
+#       # Female freq-dep fecundity of Female chicks
+#       M["F_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * (1 - HSR))
+#       
+#       # Female freq-dep fecundity of Male chicks
+#       M["M_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * HSR)
+#       
+#       # Male freq-dep fecundity of Female chicks
+#       M["F_1st_year", "M_Adult"] <- ((k * F2) / (M2 + (F2 / h)) * (1 - HSR))
+#       
+#       # Male freq-dep fecundity of Male chicks
+#       M["M_1st_year", "M_Adult"] <- ((k * F2) / (M2 + (F2 / h)) * HSR)
+#       
+#       # define the new n (i.e., new stage distribution at time t)
+#       n <- M %*% n # + I)
+#       
+#       # # number of female 1st years produced
+#       # N_female_1st_years <-
+#       #   (n[2] * M["F_1st_year", "F_Adult"] * M["F_Adult", "F_1st_year"]) +
+#       #   (n[4] * M["F_1st_year", "M_Adult"] * M["F_Adult", "F_1st_year"])
+#       # 
+#       # 
+#       # # number of male 1st years produced
+#       # N_male_1st_years <-
+#       #   (n[2] * M["M_1st_year", "F_Adult"] * M["M_Adult", "M_1st_year"]) +
+#       #   (n[4] * M["M_1st_year", "M_Adult"] * M["M_Adult", "M_1st_year"])
+#       # # 
+#       # sex_ratio_1st_years <- N_male_1st_years / (N_male_1st_years + N_female_1st_years)
+#       
+#       # define rownames of stage matrix
+#       rownames(stage) <- rownames(M)
+#       
+#       # define colnames of stage matrix
+#       colnames(stage) <- 0:(t - 1)
+#       
+#       # calculate the proportional stable stage distribution
+#       stage <- apply(stage, 2, function(x) x/sum(x))
+#       
+#       # define stable stage as the last stage
+#       stable.stage <- stage[, t]
+#       
+#       pop_dist[, i] <- n
+#       
+#     }
+#     # calc ASR as the proportion of the adult stable stage class that is male
+#     ASR <- stable.stage[4]/(stable.stage[2] + stable.stage[4])
+#     SSR <- stable.stage[3]/(stable.stage[1] + stable.stage[3])
+#     
+#     # make a list of results
+#     pop.proj <- list(ASR = ASR,
+#                      SSR = SSR,
+#                      lambda = pop[t]/pop[t - 1],
+#                      pop_size = pop,
+#                      stage_size = pop_dist,
+#                      stable.stage = stable.stage,
+#                      stage.vectors = stage,
+#                      SSD_M2 = stable.stage[4],
+#                      SSD_F2 = stable.stage[2],
+#                      iter = num_boot + ((iter_add - 1) * niter), 
+#                      species = species)
+#     
+#     # print the list as output to the function
+#     pop.proj
+#     
+#     # populate sex-specific adult immigration matrix
+#     # immigration_vector <- matrix(data = c(0, demographic_rates$F_Adult_immigration, 
+#     #                                       0, demographic_rates$M_Adult_immigration), 
+#     #                              nrow = 4, ncol = 1)
+#     
+#     # Determine the ASR at the stable stage distribution
+#     ASR_SSD <- matrix_ASR(M = demographic_matrix,
+#                           h = demographic_rates$h,
+#                           HSR = demographic_rates$HSR, 
+#                           iterations = 100,
+#                           num_boot = num_boot,
+#                           species = species,
+#                           # immigrant_pop_size = immigrant_pop_size,
+#                           # ISR = ISR, 
+#                           iter_add = 1,
+#                           n = rep(10, nrow(demographic_matrix)))
+#     
+#     # Extract ASR
+#     ASR_estimate <- ASR_SSD$ASR
+#     
+#     # make a list of all the results from this iteration
+#     bootstrap_results_list <- 
+#       list(offspring_hazard_lambda = haz_ss_lambda, 
+#            offspring_hazard_rates = haz_ss_curve,
+#            coucal_vital_rates = coucal_vital_rates,
+#            ASR_SSD = ASR_SSD,
+#            bootstrapped_data = coucal_boot_list)
+#     
+#     # extract file directory
+#     file_directory <- paste0(getwd(), output.directory, "/", bootstrap_name, "_", num_boot, ".Rds") # DEMO "/output/bootstraps/hazard/raw/"
+#     
+#     # save the results of the iteration
+#     save(bootstrap_results_list, file = file_directory)
+#     
+#     bootstrap_results_list
+  
+```
+
 
 ```{r}
 BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc <-
   pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
-           offspring = status_dat_all %>% filter(species == "BC"),
+           offspring = status_dat_all %>% filter(species == "BC"), # BC_all_dat,
            adult_surival_boot_out = trans_WBC_adult_surival_boot_out,
            bootstrap_name = "BC_boot_w_trans_WBC_ad_surv_stoc",
            species = "BC",
@@ -2088,6 +3386,7 @@ BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc <-
            HSR_dist = HSR_dist_BC,
            h_dist = h_dist_BC,
            egg_surv_dist = egg_surv_dist_BC,
+           # ISR_dist = ISR_dist_BC,
            fledge_age_distF = fledge_age_distF_BC,
            fledge_age_distM = fledge_age_distM_BC,
            flight_age_distF = flight_age_distF_BC,
@@ -2111,6 +3410,9 @@ h_dist_WBC = c(pull(filter(coucal_mating_system, species == "WBC"), mean),
 
 egg_surv_dist_WBC = c(pull(filter(coucal_egg_survival, species == "WBC"), mean),
                       pull(filter(coucal_egg_survival, species == "WBC"), sd))
+
+# ISR_dist_WBC = c(pull(filter(coucal_ISR, species == "WBC"), mean), 
+#                  pull(filter(coucal_ISR, species == "WBC"), sd))
 
 fledge_age_distF_WBC = c(pull(filter(coucal_fledge_age, species == "WBC" & sex == "F"), 
                               mean), 
@@ -2138,8 +3440,12 @@ run stochastic demographic simulation
 ```{r}
 WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
   pbsapply(1:niter, run_bootstrap_juv_hazd_ad_surv_ASR,
-           offspring = status_dat_all %>% filter(species == "WBC"), 
+           offspring = status_dat_all %>% filter(species == "WBC"), # BC_all_dat,
            adult_surival_boot_out = WBC_adult_surival_boot_out,
+           # immigrant_pop_size = ceiling(sum(pull(filter(coucal_ISR, species == "BC"), 
+           #                                       mean_f),
+           #                                  pull(filter(coucal_ISR, species == "BC"), 
+           #                                       mean_M))),
            bootstrap_name = "WBC_boot_w_WBC_ad_surv_stoc",
            species = "WBC",
            iter_add = 1,
@@ -2276,6 +3582,48 @@ sex_diff_survival_output2 <-
          species = factor(species, 
                           levels = c("BC", "WBC")))
 
+# HSR_df <- 
+#   data.frame(species = c("BC", "WBC"),
+#              mean = c(0.4955, 0.5198),
+#              upper_CI = c(0.5334, 0.5643),
+#              lower_CI = c(0.4577, 0.4751),
+#              variable = "HSR")
+# 
+# junk1 <- 
+#   data.frame(species = as.character(HSR_df$species), 
+#              mean = c(NA,NA), 
+#              lower_CI = c(NA,NA), 
+#              upper_CI = c(NA,NA),
+#              variable = "Nestling")
+# junk2 <- 
+#   data.frame(species = as.character(HSR_df$species), 
+#              mean = c(NA,NA), 
+#              lower_CI = c(NA,NA), 
+#              upper_CI = c(NA,NA),
+#              variable = "Groundling")
+# junk3 <- 
+#   data.frame(species = as.character(HSR_df$species), 
+#              mean = c(NA,NA), 
+#              lower_CI = c(NA,NA), 
+#              upper_CI = c(NA,NA),
+#              variable = "Fledgling")
+# junk4 <- 
+#   data.frame(species = as.character(HSR_df$species), 
+#              mean = c(NA,NA), 
+#              lower_CI = c(NA,NA), 
+#              upper_CI = c(NA,NA),
+#              variable = "Adult")
+# HSR_df2 <- 
+#   bind_rows(HSR_df, junk1, junk2, junk3, junk4) %>% 
+#   mutate(variable = factor(variable, 
+#                            levels = c("HSR", "Nestling", "Groundling", 
+#                                       "Fledgling", "Adult")),
+#          mean = as.numeric(mean),
+#          lower_CI = as.numeric(lower_CI),
+#          upper_CI = as.numeric(upper_CI),
+#          species = factor(species, 
+#                           levels = c("BC", "WBC")))
+
 # Figure 2a: plot the sex-biases in survival across the three stages
 vital_rate_theme <- 
   theme_bw() +
@@ -2296,9 +3644,13 @@ vital_rate_theme <-
 
 surv_diff_plot <-
   ggplot(aes(y = difference, x = stage, fill = stage), 
-         data = slice_sample(group_by(sex_diff_survival_output, species, stage), n = 1000)) +
+         data = #slice(group_by(sex_diff_survival_output, species, stage), 1:1000)) +
+  slice_sample(group_by(sex_diff_survival_output, species, stage), n = 1000)) +
   geom_violin(draw_quantiles = c(0.025, 0.5, 0.975), color = "grey10",
               scale = "width", trim = TRUE, adjust = 1, size = 0.25) +
+  # geom_jitter()+#draw_quantiles = c(0.025, 0.5, 0.975), 
+  #             #scale = "width", trim = TRUE, adjust = 1, size = 0.25) +
+  # coord_flip() +
   vital_rate_theme +
   facet_grid(. ~ species, labeller = as_labeller(species_names)) +
   theme(axis.title.x = element_text(size = 7, colour = "black"),
@@ -2308,10 +3660,13 @@ surv_diff_plot <-
         axis.title.y = element_text(size = 7, hjust = 0.5, vjust = -3),
         axis.text.y  = element_text(size = 6, colour = "black"),
         axis.ticks.y = element_line(size = 0.2),
+        # panel.border = element_rect(colour = "red"),
+        # plot.margin = unit(c(0.2, 0.39, 0.405, 1.55), "cm"),
         plot.margin = unit(c(0.2, 1.35, 0.42, 0.3), "cm"),
         strip.text = element_text(size = 6, colour = "black", face = "italic")
   ) +
   scale_fill_manual(values = cbPalette) +
+  # scale_color_manual(values = cbPalette) +
   scale_y_continuous(limits = c(-0.65, 0.65),
                      breaks = c(-0.5, -0.25, 0, 0.25, 0.5),
                      expand = c(0, 0), position = "left",
@@ -2321,16 +3676,23 @@ surv_diff_plot <-
                                 expression(phantom("-")*"0.50"))) +
   xlab("Life stage") +
   ylab("Sex bias\n") +
-  scale_x_discrete(labels = c(
+  scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
     "HSR" = "hatching\nsex ratio",
     "Nestling" = "nestling\nsurvival",
     "Groundling" = "groundling\nsurvival",
     "Fledgling" = "fledgling\nsurvival",
     "Adult" = "adult\nsurvival"))
+  # scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
+  #                             "HSR" = expression(italic("\u03C1")),
+  #                             "Nestling" = expression(S["n"]),
+  #                             "Groundling" = expression(S["g"]),
+  #                             "Fledgling" = expression(S["f"]),
+  #                             "Adult" = expression(phi["ad"])))
 
 background <-
   ggplot(aes(y = difference, x = stage, fill = stage),
          data = sex_diff_survival_output) +
+  # coord_flip() +
   annotate("rect", xmin = -Inf, xmax = Inf, 
            ymin = -Inf, ymax = 0, alpha = 0.7,
            fill = pull(ggthemes_data$wsj$palettes$colors6[3,2])) +
@@ -2345,6 +3707,12 @@ background <-
            label = c("\u2642"), size = 4,
            family = "Menlo",
            vjust = c(1), hjust = c(0.5), colour = "grey10") +
+  # annotate("text", x = c(2), y = c(-0.45),
+  #          label = c("female"), size = 2,
+  #          vjust = c(0), hjust = c(0.5)) +
+  # annotate("text", x = c(2), y = c(0.45),
+  #          label = c("male"), size = 2,
+  #          vjust = c(1), hjust = c(0.5)) +
   facet_grid(. ~ species, labeller = as_labeller(species_names)) +
   vital_rate_theme +
   theme(axis.title.x = element_text(size = 7, colour = "white"),
@@ -2355,15 +3723,22 @@ background <-
                                     colour = "white"),
         axis.text.y  = element_text(size = 6, colour = "white"),
         axis.ticks.y = element_line(size = 0.2, colour = "white"),
+        # panel.border = element_rect(colour = "black"),
         plot.margin = unit(c(0.2, 1.35, 1.55, 0.3), "cm"),
         strip.text = element_text(size = 6, colour = "white")
   ) +
-  scale_x_discrete(labels = c(
+  scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
     "HSR" = "hatching\nsex ratio",
     "Nestling" = "nestling\nsurvival",
     "Groundling" = "groundling\nsurvival",
     "Fledgling" = "fledgling\nsurvival",
     "Adult" = "adult\nsurvival")) +
+  # scale_x_discrete(labels = c(#"ISR" = expression(italic("ISR")),
+  #                             "HSR" = expression(italic("\u03C1")),
+  #                             "Nestling" = expression(S["n"]),
+  #                             "Groundling" = expression(S["g"]),
+  #                             "Fledgling" = expression(S["f"]),
+  #                             "Adult" = expression(phi["ad"]))) +
   scale_y_continuous(limits = c(-0.65, 0.65), 
                      breaks = c(-0.5, -0.25, 0, 0.25, 0.5), 
                      expand = c(0, 0), position = "left",
@@ -2372,7 +3747,43 @@ background <-
                                 expression(phantom("-")*"0.25"),
                                 expression(phantom("-")*"0.50"))) +
   xlab("Life stage") +
-  ylab("Sex bias\n")
+  ylab("Sex bias\n") #+
+  # ylab(expression(paste("Hatching sex ratio\n(",italic("\u03C1"),", 95% CI)"), 
+  #                 sep = ""))
+
+# HSR_plot <- 
+#   ggplot(aes(fill = variable), data = HSR_df2) +
+#   geom_pointrange(data = HSR_df2, aes(y = mean, x = variable, ymin = lower_CI,
+#                                       ymax = upper_CI), size = 0.2, 
+#                   fatten = 0.1) +
+#   geom_blank(data = HSR_df2, aes(y = mean, x = variable)) +
+#   # coord_flip() +
+#   facet_grid(. ~ species, labeller = as_labeller(species_names)) +
+#   theme(axis.title.x = element_text(size = 7, colour = "black"),
+#         axis.text.x  = element_text(size = 8, angle = 45, hjust = 0.9, 
+#                                     vjust = 1, colour = "black"),
+#         axis.ticks.x = element_line(size = 0.2, colour = "grey40"),
+#         axis.title.y = element_text(size = 10, hjust = 0.5, vjust = 1.5, 
+#                                     colour = "black"),
+#         axis.text.y  = element_text(size = 6, colour = "black"),
+#         axis.ticks.y = element_line(size = 0.2, colour = "grey40"),
+#         # panel.border = element_rect(colour = "blue"),
+#         plot.margin = unit(c(0.2, 1.35, 0.405, -0.07), "cm"),
+#         strip.text = element_text(size = 6, colour = "black")
+#   ) +
+#   scale_y_continuous(limits=c(0,1), expand = c(0, 0)) +
+#   xlab("Life stage") +
+#   ylab(expression(atop(x = "", 
+#                        y = atop(x = "Hatching sex ratio", 
+#                                 y = paste("(", italic("\u03C1"), ", 95% CI)", 
+#                                           sep = ""))))) +
+#   # ylab(expression(paste("Hatching sex ratio\n(",italic("\u03C1"),", 95% CI)"), 
+#   #                 sep = "")) +
+#   scale_x_discrete(labels = c("HSR" = expression(italic("\u03C1")),
+#                               "Nestling" = expression(S["n"]),
+#                               "Groundling" = expression(S["g"]),
+#                               "Fledgling" = expression(S["f"]),
+#                               "Adult" = expression(phi["ad"])))
 
 # jpeg(filename = "/Users/luketheduke2/ownCloud/coucal_ASR/R_project/products/figures/jpg/demographic_differences_plot.jpeg",
 #      # compression = "none",
@@ -2386,6 +3797,7 @@ grid::pushViewport( grid::viewport(
   layout = grid::grid.layout(1, 1, widths = unit(1, "npc")))) 
 print(background, newpage = FALSE)
 print(surv_diff_plot, newpage = FALSE)
+# print(HSR_plot, newpage = FALSE)
 grid::popViewport()
 # dev.off()
 ```
@@ -2420,18 +3832,36 @@ ASR_boot_summary <-
                    max_ASR = max(M_Adult),
                    min_ASR = min(M_Adult))
 
+# define the factor levels of the population variable so that the populations
+# are in an order that reflects the ASR (male biased to female biased)
+# ASR_boot <- 
+#   ASR_boot %>% 
+#   mutate(species = factor(species, levels = c("BC", "WBC")))
+
 Figure_2b <- 
   ggplot() +
   annotate("rect", xmin=0, xmax=0.5, ymin=0, ymax=610, alpha=0.6,
            fill= pull(ggthemes_data$wsj$palettes$colors6[3,2])) +
+             #brewer.pal(8, "Set1")[c(5)]) +
   annotate("rect", xmin=0.5, xmax=1, ymin=0, ymax=610, alpha=0.6,
            fill= pull(ggthemes_data$wsj$palettes$colors6[2,2])) +
+             #brewer.pal(8, "Set1")[c(2)]) +
+  # annotate("rect", xmin=0.25, xmax=0.5, ymin=0, ymax = 200, alpha=0.6,
+  #          fill= brewer.pal(8, "Dark2")[c(2)]) +
+  # annotate("rect", xmin=0.5, xmax=0.75, ymin=0, ymax = 200, alpha=0.6,
+  #          fill= brewer.pal(8, "Dark2")[c(1)]) +
   annotate("text", x = c(0.05), y = c(305),
            label = c("\u2640"), size = 4, colour = "grey10",
            family="Menlo", vjust = c(0), hjust = c(0.5)) +
   annotate("text", x = c(0.95), y = c(305),
            label = c("\u2642"), size = 4, colour = "grey10",
            family="Menlo", vjust = c(1), hjust = c(0.5)) +
+  # annotate("text", x = c(0.3), y = c(100),
+  #          label = c("\u2640"), size = 4, colour = "grey10",
+  #          family="Menlo", vjust = c(0.5), hjust = c(0.5)) +
+  # annotate("text", x = c(0.7), y = c(100),
+  #          label = c("\u2642"), size = 4, colour = "grey10",
+  #          family="Menlo", vjust = c(0.5), hjust = c(0.5)) +
   geom_histogram(binwidth = 0.01, data = ASR_boot, aes(x = M_Adult), fill = "grey30") +
   geom_errorbarh(data = ASR_boot_summary, aes(y = 600, x = lcl_ASR, xmin = lcl_ASR, xmax = ucl_ASR), 
                  color = "black", size = 0.3, linetype = "solid") +
@@ -2440,6 +3870,8 @@ Figure_2b <-
   theme_bw() +
   theme(text = element_text(family="Verdana"),
         legend.position = "none",
+        # panel.background = element_rect(fill = "transparent",colour = NA),
+        # plot.background = element_rect(fill = "transparent",colour = NA),
         axis.title.x = element_text(size=7, vjust=-0.1),
         axis.text.x  = element_text(size=6, angle = 45, hjust = 1, colour = "black"),
         axis.title.y = element_text(size=7, hjust=0.5, vjust = -2.75, margin = margin(0, 11, 0, 0)),
@@ -2453,13 +3885,19 @@ Figure_2b <-
         plot.margin = unit(c(0.2, 1.35, 0.405, 0.08), "cm"),
         panel.spacing = unit(0.3, "lines"),
         strip.background = element_blank(),
+        # strip.text = element_text(size=11)) +
         strip.text = element_blank()) +
   ylab("Bootstrap frequency") +
   xlab("Adult sex ratio\n(proportion \u2642, 95% CI)") +
+  # xlab("Adult sex ratio\n(proportion male)") +
   scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
   scale_y_continuous(limits = c(0, 610), expand = c(0, 0), breaks=c(0, 100, 200, 300, 400, 500))
 
 Figure_2b
+
+# cvdPlot(Figure_2b)
+# 
+# cvdPlot(replacePlotColor(Figure_2b))
 
 # ggsave(Figure_2b,
 #        filename = "/Users/luketheduke2/ownCloud/coucal_ASR/R_project/products/figures/ASR_plot.jpeg",
@@ -2482,6 +3920,8 @@ Figure_2b
 sensitivity_analysis <-
   function(vital_rate_summary, matrix_str, h = 1, k = 4, 
            HSR, 
+           # ISR, 
+           # immigrant_pop_size = 100, 
            niter = 1000, ASR, lambda){
     
     # make a list of all parameters
@@ -2547,6 +3987,9 @@ sensitivity_analysis <-
     HSR_pert_ASR <- matrix(numeric(length(vr_nums)),
                            ncol = 1, dimnames = list(vr_nums, "HSR"))
     
+    # ISR_pert_ASR <- matrix(numeric(length(vr_nums)),
+    #                        ncol = 1, dimnames = list(vr_nums, "ISR"))
+    
     vr_pert_lambda <- matrix(numeric(n * length(vr_nums)),
                              ncol = n, dimnames = list(vr_nums, names(vr)))
     
@@ -2558,6 +4001,9 @@ sensitivity_analysis <-
     
     HSR_pert_lambda <- matrix(numeric(length(vr_nums)),
                               ncol = 1, dimnames = list(vr_nums, "HSR"))
+    
+    # ISR_pert_lambda <- matrix(numeric(length(vr_nums)),
+    #                           ncol = 1, dimnames = list(vr_nums, "ISR"))
     
     ##### perturbation of survival rates ####
     for (g in 1:n) { # pick a column (i.e., a variable) 
@@ -2572,6 +4018,10 @@ sensitivity_analysis <-
                     nrow = sqrt(length(matrix_str)), byrow=TRUE, 
                     dimnames = list(stages, stages)) # build the matrix with the new value
         
+        # I <- matrix(data = c(0, vital_rate_summary$F_Adult_immigration, 
+        #                      0, vital_rate_summary$M_Adult_immigration), 
+        #             nrow = 4, ncol = 1)
+        
         # reset the starting stage distribution for simulation (all with 10 individuals)
         m <- rep(10, no_stages) 
         
@@ -2583,10 +4033,10 @@ sensitivity_analysis <-
           pop[j] <- sum(m)
           
           # number of male adults at time t
-          M2 <- stage[4, j] * A["M_Adult", "M_Adult"]
+          M2 <- stage[4, j] * A["M_Adult", "M_Adult"] #+ I[4, 1]
           
           # number of female adults at time t
-          F2 <- stage[2, j] * A["F_Adult", "F_Adult"]
+          F2 <- stage[2, j] * A["F_Adult", "F_Adult"] #+ I[2, 1]
           
           # Female freq-dep fecundity of Female chicks
           A["F_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * (1 - HSR) )
@@ -2601,7 +4051,7 @@ sensitivity_analysis <-
           A["M_1st_year", "M_Adult"] <- ((k * F2) / (M2 + (F2 / h)) * HSR)
           
           # define the new n (i.e., new stage distribution at time t)
-          m <- A %*% (m)
+          m <- A %*% (m)# + I)
         }
         
         # define rownames of stage matrix
@@ -2652,6 +4102,10 @@ sensitivity_analysis <-
                   nrow = sqrt(length(matrix_str)), byrow=TRUE, 
                   dimnames = list(stages, stages)) 
       
+      # I <- matrix(data = c(0, vital_rate_summary$F_Adult_immigration, 
+      #                      0, vital_rate_summary$M_Adult_immigration), 
+      #             nrow = 4, ncol = 1)
+      
       # reset the starting stage distribution for simulation (all with 10 individuals)
       m <- rep(10, no_stages) 
       
@@ -2663,10 +4117,10 @@ sensitivity_analysis <-
         pop[j] <- sum(m)
         
         # number of male adults at time t
-        M2 <- stage[4, j] * A["M_Adult", "M_Adult"]
+        M2 <- stage[4, j] * A["M_Adult", "M_Adult"]# + I[4, 1]
         
         # number of female adults at time t
-        F2 <- stage[2, j] * A["F_Adult", "F_Adult"]
+        F2 <- stage[2, j] * A["F_Adult", "F_Adult"]# + I[2, 1]
         
         # Female freq-dep fecundity of Female chicks
         A["F_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h_nums[i])) * (1 - HSR) )
@@ -2681,7 +4135,7 @@ sensitivity_analysis <-
         A["M_1st_year", "M_Adult"] <- ((k * F2) / (M2 + (F2 / h_nums[i])) * HSR)
         
         # define the new n (i.e., new stage distribution at time t)
-        m <- A %*% (m)
+        m <- A %*% (m)# + I)
       }
       # define rownames of stage matrix
       rownames(stage) <- rownames(A)
@@ -2727,6 +4181,10 @@ sensitivity_analysis <-
       A <- matrix(sapply(matrix_str, eval, vr, NULL), 
                   nrow = sqrt(length(matrix_str)), byrow=TRUE, 
                   dimnames = list(stages, stages))
+      # 
+      # I <- matrix(data = c(0, vital_rate_summary$F_Adult_immigration, 
+      #                      0, vital_rate_summary$M_Adult_immigration), 
+      #             nrow = 4, ncol = 1)
       
       # reset the starting stage distribution for simulation (all with 10 individuals)
       m <- rep(10, no_stages) 
@@ -2739,10 +4197,10 @@ sensitivity_analysis <-
         pop[j] <- sum(m)
         
         # number of male adults at time t
-        M2 <- stage[4, j] * A["M_Adult", "M_Adult"]
+        M2 <- stage[4, j] * A["M_Adult", "M_Adult"]# + I[4, 1]
         
         # number of female adults at time t
-        F2 <- stage[2, j] * A["F_Adult", "F_Adult"]
+        F2 <- stage[2, j] * A["F_Adult", "F_Adult"]# + I[2, 1]
         
         # Female freq-dep fecundity of Female chicks
         A["F_1st_year", "F_Adult"] <- ((k_nums[i] * M2) / (M2 + (F2 / h)) * (1 - HSR) )
@@ -2757,7 +4215,7 @@ sensitivity_analysis <-
         A["M_1st_year", "M_Adult"] <- ((k_nums[i] * F2) / (M2 + (F2 / h)) * HSR)
         
         # define the new n (i.e., new stage distribution at time t)
-        m <- A %*% (m)
+        m <- A %*% (m)# + I)
       }
       # define rownames of stage matrix
       rownames(stage) <- rownames(A)
@@ -2805,6 +4263,10 @@ sensitivity_analysis <-
                   nrow = sqrt(length(matrix_str)), byrow=TRUE, 
                   dimnames = list(stages, stages))
       
+      # I <- matrix(data = c(0, vital_rate_summary$F_Adult_immigration, 
+      #                      0, vital_rate_summary$M_Adult_immigration), 
+      #             nrow = 4, ncol = 1)
+      
       # reset the starting stage distribution for simulation (all with 10 individuals)
       m <- rep(10, no_stages) 
       
@@ -2816,10 +4278,10 @@ sensitivity_analysis <-
         pop[j] <- sum(m)
         
         # number of male adults at time t
-        M2 <- stage[4, j] * A["M_Adult", "M_Adult"]
+        M2 <- stage[4, j] * A["M_Adult", "M_Adult"]# + I[4, 1]
         
         # number of female adults at time t
-        F2 <- stage[2, j] * A["F_Adult", "F_Adult"]
+        F2 <- stage[2, j] * A["F_Adult", "F_Adult"]# + I[2, 1]
         
         # Female freq-dep fecundity of Female chicks
         A["F_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * (1 - vr_nums[i]) )
@@ -2834,7 +4296,7 @@ sensitivity_analysis <-
         A["M_1st_year", "M_Adult"] <- ((k * F2) / (M2 + (F2 / h)) * vr_nums[i])
         
         # define the new n (i.e., new stage distribution at time t)
-        m <- A %*% (m)
+        m <- A %*% (m)# + I)
         
       }
       # define rownames of stage matrix
@@ -2875,9 +4337,95 @@ sensitivity_analysis <-
     lambda_pert_results[n + 3, 2] <- predict(spl_lambda, x = HSR, deriv = 1)$y
     lambda_pert_results[n + 3, 3] <- HSR/lambda * lambda_pert_results[n + 3, 2]
     
+    ##### perturbation of ISR ####
+    # for (i in 1:length(vr_nums)) # pick a perturbation level
+    # {
+    #   A <- matrix(sapply(matrix_str, eval, vr, NULL), 
+    #               nrow = sqrt(length(matrix_str)), byrow=TRUE, 
+    #               dimnames = list(stages, stages))
+    #   
+    #   I <- matrix(data = c(0, immigrant_pop_size * (1 - vr_nums[i]), 
+    #                        0, immigrant_pop_size * vr_nums[i]), 
+    #               nrow = 4, ncol = 1)
+    #   
+    #   # reset the starting stage distribution for simulation (all with 10 individuals)
+    #   m <- rep(10, no_stages) 
+    #   
+    #   for (j in 1:niter) { # project the matrix through t iteration
+    #     # stage distribution at time t
+    #     stage[,j] <- m
+    #     
+    #     # population size at time t
+    #     pop[j] <- sum(m)
+    #     
+    #     # number of male adults at time t
+    #     M2 <- stage[4, i] * A["M_Adult", "M_Adult"] + I[4, 1]
+    #     
+    #     # number of female adults at time t
+    #     F2 <- stage[2, i] * A["F_Adult", "F_Adult"] + I[2, 1]
+    #     
+    #     # Female freq-dep fecundity of Female chicks
+    #     A["F_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * (1 - HSR) )
+    #     
+    #     # Female freq-dep fecundity of Male chicks
+    #     A["M_1st_year", "F_Adult"] <- ((k * M2) / (M2 + (F2 / h)) * HSR)
+    #     
+    #     # Male freq-dep fecundity of Female chicks
+    #     A["F_1st_year", "M_Adult"] <- ((k * F2) / (M2 + (F2 / h)) * (1 - HSR))
+    #     
+    #     # Male freq-dep fecundity of Male chicks
+    #     A["M_1st_year", "M_Adult"] <- ((k * F2) / (M2 + (F2 / h)) * HSR)
+    #     
+    #     # define the new n (i.e., new stage distribution at time t)
+    #     m <- A %*% (m + I)
+    #     
+    #   }
+    #   # define rownames of stage matrix
+    #   rownames(stage) <- rownames(A)
+    #   
+    #   # define colnames of stage matrix
+    #   colnames(stage) <- 0:(niter - 1)
+    #   
+    #   # calculate the proportional stable stage distribution
+    #   stage <- apply(stage, 2, function(x) x / sum(x))
+    #   
+    #   # define stable stage as the last stage
+    #   stable.stage <- stage[, niter]
+    #   
+    #   # calc ASR as the proportion of the adult stable stage class that is male
+    #   ISR_pert_ASR[i,] <- stable.stage[no_stages] / (stable.stage[no_stages/2] + 
+    #                                                    stable.stage[no_stages])
+    #   
+    #   # calc lambda as the pop change in the counts of the last two iterations
+    #   ISR_pert_lambda[i, ] <- pop[niter] / pop[niter - 1]
+    #   
+    # }
+    # # get the spline function of ASR
+    # spl_ASR <- 
+    #   smooth.spline(ISR_pert_ASR[which(!is.na(ISR_pert_ASR)), 1] ~ 
+    #                   names(ISR_pert_ASR[which(!is.na(ISR_pert_ASR)), ]))
+    # 
+    # # estimate the slope of the tangent of the spline at the vital rate    
+    # ASR_pert_results[n + 4, 2] <- predict(spl_ASR, x = ISR, deriv = 1)$y
+    # 
+    # # re-scale sensitivity into elasticity
+    # ASR_pert_results[n + 4, 3] <- ISR / ASR * ASR_pert_results[n + 4, 2]
+    # 
+    # # do the same steps but for lambda
+    # spl_lambda <- 
+    #   smooth.spline(ISR_pert_lambda[which(!is.na(ISR_pert_lambda)), 1] ~ 
+    #                   names(ISR_pert_lambda[which(!is.na(ISR_pert_lambda)), ]))
+    # lambda_pert_results[n + 4, 2] <- predict(spl_lambda, x = ISR, deriv = 1)$y
+    # lambda_pert_results[n + 4, 3] <- ISR / lambda * lambda_pert_results[n + 4, 2]
+    
+    
+    
+    
     #### store all results into a list ----
     result <- list(ASR_pert_results = ASR_pert_results,
                    lambda_pert_results = lambda_pert_results,
+                   # ISR_pert_ASR = ISR_pert_ASR,
+                   # ISR_pert_lambda = ISR_pert_lambda,
                    HSR_pert_ASR = HSR_pert_ASR,
                    HSR_pert_lambda = HSR_pert_lambda,
                    k_pert_ASR = k_pert_ASR,
@@ -2922,6 +4470,7 @@ make_treat_matrix <-
            species_name, 
            h, 
            k, 
+           # ISR, 
            HSR){
     
     list(F_Nestling_survival = filter(survival_rates_boot_summary,
@@ -2947,6 +4496,9 @@ make_treat_matrix <-
          h = h,
          k = k,
          
+         # # Define immigrant sex ratio
+         # ISR = ISR,
+         
          # Define primary sex ratio
          HSR = HSR)
   }
@@ -2965,38 +4517,39 @@ make_mprime_matrix <-
            h, 
            k, 
            HSR, 
+           # ISR, 
            sex){
     if(sex == "male"){
       list(F_Nestling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_nestling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_nestling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_nestling_survival")[, 4]) / 2,
            F_Groundling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_groundling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_groundling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_groundling_survival")[, 4]) / 2,
            F_Fledgling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_fledgling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_fledgling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_fledgling_survival")[, 4]) / 2,
            F_Adult_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_adult_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_adult_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_adult_survival")[, 4]) / 2,
            M_Nestling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Male_nestling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Male_nestling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_nestling_survival")[, 4]) / 2,
            M_Groundling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Male_groundling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Male_groundling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_groundling_survival")[, 4]) / 2,
            M_Fledgling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Male_fledgling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Male_fledgling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_fledgling_survival")[, 4]) / 2,
            M_Adult_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Male_adult_survival")[, 4] +
+                                         species == species_name & vital_rate == "Male_adult_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_adult_survival")[, 4]) / 2,
            Egg_survival = filter(survival_rates_boot_summary,
@@ -3005,6 +4558,9 @@ make_mprime_matrix <-
            # Define h (harem size, h = 1 is monogamy) and k (clutch size)
            h = (h + 1) / 2,
            k = k,
+           
+           # # Define immigrant sex ratio
+           # ISR = (ISR + 0.5) / 2,
       
            # Define primary sex ratio
            HSR = (HSR + 0.5) / 2)
@@ -3013,35 +4569,35 @@ make_mprime_matrix <-
     }
     else{
       list(F_Nestling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_nestling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_nestling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Female_nestling_survival")[, 4]) / 2,
            F_Groundling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_groundling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_groundling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Female_groundling_survival")[, 4]) / 2,
            F_Fledgling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_fledgling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_fledgling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Female_fledgling_survival")[, 4]) / 2,
            F_Adult_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_adult_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_adult_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Female_adult_survival")[, 4]) / 2,
            M_Nestling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_nestling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_nestling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_nestling_survival")[, 4]) / 2,
            M_Groundling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_groundling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_groundling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_groundling_survival")[, 4]) / 2,
            M_Fledgling_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_fledgling_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_fledgling_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_fledgling_survival")[, 4]) / 2,
            M_Adult_survival = (filter(survival_rates_boot_summary,
-                                         species == species_name & vital_rate == "Female_adult_survival")[, 4] +
+                                         species == species_name & vital_rate == "Female_adult_survival")[, 4] +#)[7, 4] + 
                                     filter(survival_rates_boot_summary,
                                            species == species_name & vital_rate == "Male_adult_survival")[, 4]) / 2,
            Egg_survival = filter(survival_rates_boot_summary,
@@ -3051,6 +4607,9 @@ make_mprime_matrix <-
            h = (h + 1) / 2,
            k = k,
            
+           # # Define immigrant sex ratio
+           # ISR = (ISR + 0.5) / 2,
+      
            # Define primary sex ratio
            HSR = (HSR + 0.5) / 2)
     }
@@ -3070,13 +4629,13 @@ LTRE_analysis <-
     LTRE_ASR <-
       data.frame(parameter = c("Nestling survival", "Groundling survival",
                                "Fledgling survival", "Adult survival",
-                               "Hatching sex ratio", 
+                               "Hatching sex ratio", #"Immigrant sex ratio",
                                "Mating system"),
                  contribution = numeric(6))
     LTRE_lambda <-
       data.frame(parameter = c("Nestling survival", "Groundling survival",
                                "Fledgling survival", "Adult survival",
-                               "Hatching sex ratio",
+                               "Hatching sex ratio", #"Immigrant sex ratio",
                                "Mating system"),
                  contribution = numeric(6))
     
@@ -3094,6 +4653,10 @@ LTRE_analysis <-
                  # HSR
                  ifelse(i == 5, (vital_rates[[12]] - 0.5) * 
                           Mprime_sens$ASR_pert_results$sensitivities[11],
+                        
+                        # # ISR
+                        # ifelse(i == 6, (vital_rates[[13]] - 0.5) * 
+                        #          Mprime_sens$ASR_pert_results$sensitivities[12],
                                
                                # mating system
                                (1 - vital_rates[[10]]) * 
@@ -3108,6 +4671,10 @@ LTRE_analysis <-
                # HSR
                ifelse(i == 5, (vital_rates[[12]] - 0.5) * 
                         Mprime_sens$lambda_pert_results$sensitivities[11],
+                      
+                      # # ISR
+                      # ifelse(i == 6, (vital_rates[[13]] - 0.5) * 
+                      #          Mprime_sens$lambda_pert_results$sensitivities[12],
                              
                              # mating system
                              (1 - vital_rates[[10]]) * 
@@ -3128,6 +4695,10 @@ LTRE_analysis <-
                  ifelse(i == 5, (vital_rates[[12]] - 0.5) * 
                           Mprime_sens$ASR_pert_results$sensitivities[11],
                         
+                        # # ISR
+                        # ifelse(i == 6, (vital_rates[[13]] - 0.5) * 
+                        #          Mprime_sens$ASR_pert_results$sensitivities[12],
+                               
                                # mating system
                                (1 - vital_rates[[10]]) * 
                                  Mprime_sens$ASR_pert_results$sensitivities[9]))
@@ -3142,6 +4713,10 @@ LTRE_analysis <-
                # HSR
                ifelse(i == 5, (vital_rates[[12]] - 0.5) * 
                         Mprime_sens$lambda_pert_results$sensitivities[11],
+                      
+                      # # ISR
+                      # ifelse(i == 6, (vital_rates[[13]] - 0.5) * 
+                      #          Mprime_sens$lambda_pert_results$sensitivities[12],
                              
                              # mating system
                              (1 - vital_rates[[10]]) * 
@@ -3154,6 +4729,7 @@ LTRE_analysis <-
                                             "Groundling survival",
                                             "Nestling survival",
                                             "Hatching sex ratio",
+                                            #"Immigrant sex ratio",
                                             "Mating system"))
     LTRE_lambda$parameter <- 
       factor(LTRE_lambda$parameter, levels = c("Adult survival",
@@ -3161,6 +4737,7 @@ LTRE_analysis <-
                                                "Groundling survival",
                                                "Nestling survival",
                                                "Hatching sex ratio",
+                                               #"Immigrant sex ratio",
                                                "Mating system"))
     
     LTRE_ASR$model <- "ASR"
@@ -3290,6 +4867,7 @@ BC_VR_treat <-
                     h = 1/pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
                     HSR = pull(filter(parameter_distributions, species == "BC" & trait == "hatching_sex_ratio"), mean),
                     k = pull(filter(parameter_distributions, species == "BC" & trait == "clutch_size"), mean),
+                    # ISR = pull(filter(parameter_distributions, species == "BC" & trait == "immigration_sex_ratio"), mean),
                     species_name = "BC")
 
 BC_VR_mprime_male <- 
@@ -3297,6 +4875,7 @@ BC_VR_mprime_male <-
                      h = 1/pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
                      HSR = pull(filter(parameter_distributions, species == "BC" & trait == "hatching_sex_ratio"), mean),
                      k = pull(filter(parameter_distributions, species == "BC" & trait == "clutch_size"), mean),
+                     # ISR = pull(filter(parameter_distributions, species == "BC" & trait == "immigration_sex_ratio"), mean),
                      species_name = "BC",
                      sex = "male")
 
@@ -3305,6 +4884,7 @@ BC_VR_mprime_female <-
                      h = 1/pull(filter(parameter_distributions, species == "BC" & trait == "mating_system"), mean),
                      HSR = pull(filter(parameter_distributions, species == "BC" & trait == "hatching_sex_ratio"), mean),
                      k = pull(filter(parameter_distributions, species == "BC" & trait == "clutch_size"), mean),
+                     # ISR = pull(filter(parameter_distributions, species == "BC" & trait == "immigration_sex_ratio"), mean),
                      species_name = "BC",
                      sex = "female")
 WBC_VR_treat <- 
@@ -3312,6 +4892,7 @@ WBC_VR_treat <-
                     h = 1/pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
                     HSR = pull(filter(parameter_distributions, species == "WBC" & trait == "hatching_sex_ratio"), mean),
                     k = pull(filter(parameter_distributions, species == "WBC" & trait == "clutch_size"), mean),
+                    # ISR = pull(filter(parameter_distributions, species == "WBC" & trait == "immigration_sex_ratio"), mean),
                     species_name = "WBC")
 
 WBC_VR_mprime_male <- 
@@ -3319,6 +4900,7 @@ WBC_VR_mprime_male <-
                      h = 1/pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
                      HSR = pull(filter(parameter_distributions, species == "WBC" & trait == "hatching_sex_ratio"), mean),
                      k = pull(filter(parameter_distributions, species == "WBC" & trait == "clutch_size"), mean),
+                     # ISR = pull(filter(parameter_distributions, species == "WBC" & trait == "immigration_sex_ratio"), mean),
                      species_name = "WBC",
                      sex = "male")
 
@@ -3327,6 +4909,7 @@ WBC_VR_mprime_female <-
                      h = 1/pull(filter(parameter_distributions, species == "WBC" & trait == "mating_system"), mean),
                      HSR = pull(filter(parameter_distributions, species == "WBC" & trait == "hatching_sex_ratio"), mean),
                      k = pull(filter(parameter_distributions, species == "WBC" & trait == "clutch_size"), mean),
+                     # ISR = pull(filter(parameter_distributions, species == "WBC" & trait == "immigration_sex_ratio"), mean),
                      species_name = "WBC",
                      sex = "female")
 
@@ -3343,6 +4926,8 @@ BC_treatment_ASR_analysis <-
              h = BC_VR_treat$h, 
              k = BC_VR_treat$k,
              HSR = BC_VR_treat$HSR,
+             # ISR = BC_VR_treat$ISR, 
+             # immigrant_pop_size = 0,
              iterations = 100, 
              num_boot = 1, 
              iter_add = 1,
@@ -3356,6 +4941,8 @@ WBC_treatment_ASR_analysis <-
              h = WBC_VR_treat$h, 
              k = WBC_VR_treat$k,
              HSR = WBC_VR_treat$HSR,
+             # ISR = WBC_VR_treat$ISR, 
+             # immigrant_pop_size = 0,
              iterations = 100, 
              num_boot = 1, 
              iter_add = 1,
@@ -3369,6 +4956,8 @@ BC_M_prime_ASR_analysis_male <-
              h = BC_VR_mprime_male$h, 
              k = BC_VR_mprime_male$k,
              HSR = BC_VR_mprime_male$HSR,
+             # ISR = BC_VR_mprime_male$ISR,
+             # immigrant_pop_size = 0,
              iterations = 100,
              num_boot = 1,
              iter_add = 1,
@@ -3382,6 +4971,8 @@ BC_M_prime_ASR_analysis_female <-
              h = BC_VR_mprime_female$h, 
              k = BC_VR_mprime_female$k,
              HSR = BC_VR_mprime_female$HSR,
+             # ISR = BC_VR_mprime_female$ISR,
+             # immigrant_pop_size = 0,
              iterations = 100,
              num_boot = 1,
              iter_add = 1,
@@ -3395,6 +4986,8 @@ WBC_M_prime_ASR_analysis_male <-
              h = WBC_VR_mprime_male$h, 
              k = WBC_VR_mprime_male$k,
              HSR = WBC_VR_mprime_male$HSR,
+             # ISR = WBC_VR_mprime_male$ISR,
+             # immigrant_pop_size = 0,
              iterations = 100,
              num_boot = 1,
              iter_add = 1,
@@ -3408,6 +5001,8 @@ WBC_M_prime_ASR_analysis_female <-
              h = WBC_VR_mprime_female$h, 
              k = WBC_VR_mprime_female$k,
              HSR = WBC_VR_mprime_female$HSR,
+             # ISR = WBC_VR_mprime_female$ISR,
+             # immigrant_pop_size = 0,
              iterations = 100,
              num_boot = 1,
              iter_add = 1,
@@ -3442,6 +5037,8 @@ BC_treat_sensitivity_analysis <-
                        HSR = BC_VR_treat$HSR, 
                        niter = 100, 
                        ASR = BC_ASR_treat,
+                       # ISR = BC_VR_treat$ISR, 
+                       # immigrant_pop_size = 0,
                        lambda = BC_lambda_treat)
 
 BC_Mprime_sensitivity_analysis_male <- 
@@ -3452,6 +5049,8 @@ BC_Mprime_sensitivity_analysis_male <-
                        HSR = BC_VR_mprime_male$HSR, 
                        niter = 100, 
                        ASR = BC_ASR_mprime_male,
+                       # ISR = BC_VR_mprime_male$ISR, 
+                       # immigrant_pop_size = 0,
                        lambda = BC_lambda_mprime_male)
 
 BC_Mprime_sensitivity_analysis_female <- 
@@ -3462,6 +5061,8 @@ BC_Mprime_sensitivity_analysis_female <-
                        HSR = BC_VR_mprime_female$HSR, 
                        niter = 100, 
                        ASR = BC_ASR_mprime_female,
+                       # immigrant_pop_size = 0,
+                       # ISR = BC_VR_mprime_female$ISR, 
                        lambda = BC_lambda_mprime_female) 
 
 WBC_treat_sensitivity_analysis <- 
@@ -3472,6 +5073,8 @@ WBC_treat_sensitivity_analysis <-
                        HSR = WBC_VR_treat$HSR, 
                        niter = 100, 
                        ASR = WBC_ASR_treat,
+                       # ISR = WBC_VR_treat$ISR, 
+                       # immigrant_pop_size = 0,
                        lambda = WBC_lambda_treat)
 
 WBC_Mprime_sensitivity_analysis_male <- 
@@ -3482,6 +5085,8 @@ WBC_Mprime_sensitivity_analysis_male <-
                        HSR = WBC_VR_mprime_male$HSR, 
                        niter = 100, 
                        ASR = WBC_ASR_mprime_male,
+                       # ISR = WBC_VR_mprime_male$ISR, 
+                       # immigrant_pop_size = 0,
                        lambda = WBC_lambda_mprime_male) 
 
 WBC_Mprime_sensitivity_analysis_female <- 
@@ -3492,6 +5097,8 @@ WBC_Mprime_sensitivity_analysis_female <-
                        HSR = WBC_VR_mprime_female$HSR, 
                        niter = 100, 
                        ASR = WBC_ASR_mprime_female,
+                       # ISR = WBC_VR_mprime_female$ISR, 
+                       # immigrant_pop_size = 0,
                        lambda = WBC_lambda_mprime_female)
 
 saveRDS(object = BC_treat_sensitivity_analysis, 
@@ -3602,6 +5209,8 @@ vital_rate_theme <-
   theme(
     text = element_text(family = "Verdana"),
     legend.position = "none",
+    # panel.background = element_rect(fill = "transparent", colour = NA),
+    # plot.background = element_rect(fill = "transparent", colour = NA),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     axis.ticks.length = unit(0.1, "cm"),
@@ -3615,11 +5224,12 @@ vital_rate_theme <-
 
 LTRE_ASR_plot_background <-
   ggplot2::ggplot(data = LTRE_coucal_ASR,
+                  # filter(LTRE_coucal_ASR, parameter != "Immigrant sex ratio"),
                   aes(x = parameter, y = contribution, fill = parameter)) +
   annotate("rect", xmin=-Inf, xmax=Inf, ymin=-0.15, ymax=0, alpha=0.6,
-           fill= sex_pal2[1]) + 
+           fill= sex_pal2[1]) + #brewer.pal(8, "Set1")[c(1)]) +
   annotate("rect", xmin=-Inf, xmax=Inf, ymin=0, ymax=0.15, alpha=0.6,
-           fill= sex_pal2[2]) + 
+           fill= sex_pal2[2]) + #brewer.pal(8, "Set1")[c(2)]) +
   annotate("text", x = c(2), y = c(-0.14),
            label = c("\u2640"), size = 4, family = "Menlo",
            vjust = c(0), hjust = c(0.5), colour = "grey10") +
@@ -3633,11 +5243,14 @@ LTRE_ASR_plot_background <-
         axis.text.x  = element_text(size = 7, angle = 45, hjust = 1, colour = "white"),
         axis.ticks.x = element_line(size = 0.2, colour = "white"),
         strip.text.x = element_text(size = 6, colour = "white"),
+        
         axis.title.y = element_text(size = 7, hjust=0.5, vjust = 3.5, colour = "white"),
         axis.text.y  = element_text(size = 6, colour = "white"),
         axis.ticks.y = element_blank(),
         strip.text.y = element_text(size = 6, colour = "white"),
-        plot.margin = unit(c(0.2, 0.85,
+        
+        # panel.border = element_rect(colour = "red"),
+        plot.margin = unit(c(0.2, 0.85, #0.78, 
                              0.78, 0.6), "cm")) +
   
   scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
@@ -3645,15 +5258,18 @@ LTRE_ASR_plot_background <-
                               "Groundling survival" = expression(italic(S["g"])),
                               "Fledgling survival" = expression(italic(S["f"])),
                               "Adult survival" = expression(italic(phi["a"])),
+                              # "Immigrant sex ratio" = "ISR",
                               "Mating system" = expression(italic("h")))) +
   scale_y_continuous(limits = c(-0.15 , 0.15), expand = c(0, 0),
                      breaks = c(-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15)) +
+  # seq(from = -0.15, to = 0.15, by = 0.05)) +
   ylab("Absolute contribution to adult sex ratio bias") +
   xlab("Sex bias in parameter")
 
 LTRE_ASR_plot <-
   ggplot2::ggplot() +
   geom_bar(data = LTRE_coucal_ASR,
+           # filter(LTRE_coucal_ASR, parameter != "Immigrant sex ratio"),
            aes(x = parameter, y = contribution, fill = parameter), 
            color = "black", stat = "identity", size = 0.2) + 
   facet_grid(sex ~ species, 
@@ -3669,15 +5285,23 @@ LTRE_ASR_plot <-
         axis.text.y  = element_text(size=6),
         axis.ticks.y = element_line(size = 0.2, colour = "grey40"),
         strip.text.y = element_text(size = 6),
+        # panel.background = element_rect(fill = "transparent"),
+        
+        # panel.border = element_rect(colour = "blue"),
         plot.margin = unit(c(0.2, 0.85, 0.2, 0.6), "cm")) +
+  
   scale_fill_manual(values = cbPalette) +
+  
   scale_y_continuous(limits = c(-0.15 ,0.15), expand = c(0, 0),
                      breaks = c(-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15)) +
+  # seq(from = -0.15, to = 0.15, by = 0.05)) +
+  
   scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
                               "Nestling survival" = expression(italic(S["n"])),
                               "Groundling survival" = expression(italic(S["g"])),
                               "Fledgling survival" = expression(italic(S["f"])),
                               "Adult survival" = expression(italic(phi["a"])),
+                              # "Immigrant sex ratio" = "ISR",
                               "Mating system" = expression(italic("h")))) +
   ylab("Absolute contribution to adult sex ratio bias") +
   xlab("Sex bias in parameter")
@@ -3704,6 +5328,8 @@ vital_rate_theme <-
   theme(
     text = element_text(family = "Verdana"),
     legend.position = "none",
+    # panel.background = element_rect(fill = "transparent", colour = NA),
+    # plot.background = element_rect(fill = "transparent", colour = NA),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     axis.ticks.length = unit(0.1, "cm"),
@@ -3713,13 +5339,16 @@ vital_rate_theme <-
     strip.background = element_blank()
   )
 
+# theme_set(vital_rate_theme)
+
 LTRE_ASR_plot_background_female <-
   ggplot2::ggplot(data = filter(LTRE_coucal_ASR, sex == "female"),
+                  # filter(LTRE_coucal_ASR, parameter != "Immigrant sex ratio"),
                   aes(x = parameter, y = contribution, fill = parameter)) +
   annotate("rect", xmin=-Inf, xmax=Inf, ymin=-0.15, ymax=0, alpha=0.6,
-           fill= sex_pal2[1]) +
+           fill= sex_pal2[1]) + #brewer.pal(8, "Set1")[c(1)]) +
   annotate("rect", xmin=-Inf, xmax=Inf, ymin=0, ymax=0.15, alpha=0.6,
-           fill= sex_pal2[2]) +
+           fill= sex_pal2[2]) + #brewer.pal(8, "Set1")[c(2)]) +
   annotate("text", x = c(2), y = c(-0.14),
            label = c("\u2640"), size = 4, family = "Menlo",
            vjust = c(0), hjust = c(0.5), colour = "grey10") +
@@ -3738,22 +5367,28 @@ LTRE_ASR_plot_background_female <-
         axis.text.y  = element_text(size = 6, colour = "white"),
         axis.ticks.y = element_blank(),
         strip.text.y = element_text(size = 6, colour = "white"),
-        plot.margin = unit(c(0.2, 0.85,
+        
+        # panel.border = element_rect(colour = "red"),
+        plot.margin = unit(c(0.2, 0.85, #0.78, 
                              0.78, 0.6), "cm")) +
+  
   scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
                               "Nestling survival" = expression(italic(S["n"])),
                               "Groundling survival" = expression(italic(S["g"])),
                               "Fledgling survival" = expression(italic(S["f"])),
                               "Adult survival" = expression(italic(phi["a"])),
+                              # "Immigrant sex ratio" = "ISR",
                               "Mating system" = expression(italic("h")))) +
   scale_y_continuous(limits = c(-0.15 , 0.15), expand = c(0, 0),
                      breaks = c(-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15)) +
+  # seq(from = -0.15, to = 0.15, by = 0.05)) +
   ylab("Absolute contribution to\nadult sex ratio bias") +
   xlab("Sex bias in parameter")
 
 LTRE_ASR_plot_female <-
   ggplot2::ggplot() +
   geom_bar(data = filter(LTRE_coucal_ASR, sex == "female"),
+           # filter(LTRE_coucal_ASR, parameter != "Immigrant sex ratio"),
            aes(x = parameter, y = contribution, fill = parameter), 
            color = "black", stat = "identity", size = 0.2) + 
   facet_grid(. ~ species, 
@@ -3769,15 +5404,23 @@ LTRE_ASR_plot_female <-
         axis.text.y  = element_text(size=6),
         axis.ticks.y = element_line(size = 0.2, colour = "grey40"),
         strip.text.y = element_text(size = 6),
+        # panel.background = element_rect(fill = "transparent"),
+        
+        # panel.border = element_rect(colour = "blue"),
         plot.margin = unit(c(0.2, 0.85, 0.2, 0.6), "cm")) +
+  
   scale_fill_manual(values = cbPalette) +
+  
   scale_y_continuous(limits = c(-0.15 ,0.15), expand = c(0, 0),
                      breaks = c(-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15)) +
+  # seq(from = -0.15, to = 0.15, by = 0.05)) +
+  
   scale_x_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
                               "Nestling survival" = expression(italic(S["n"])),
                               "Groundling survival" = expression(italic(S["g"])),
                               "Fledgling survival" = expression(italic(S["f"])),
                               "Adult survival" = expression(italic(phi["a"])),
+                              # "Immigrant sex ratio" = "ISR",
                               "Mating system" = expression(italic("h")))) +
   ylab("Absolute contribution to\nadult sex ratio bias") +
   xlab("Sex bias in parameter")
@@ -3795,6 +5438,10 @@ print(LTRE_ASR_plot_background_female, newpage = FALSE)
 print(LTRE_ASR_plot_female, newpage = FALSE)
 grid::popViewport()
 # dev.off()
+```
+
+```{r}
+library(patchwork)
 ```
 
 ```{r}
@@ -3820,14 +5467,16 @@ prop_contribution_table <-
                          ifelse(contribution1 < 0 & contribution2 > 0, contribution1/contribution2,
                                 ifelse(contribution1 > 0 & contribution2 < 0, -(contribution1/contribution2), contribution1/contribution2))),
          parameter1 = factor(parameter1, 
-                             levels = c("Hatching sex ratio",
+                             levels = c(#"Immigrant sex ratio",
+                                        "Hatching sex ratio",
                                         "Nestling survival",
                                         "Groundling survival",
                                         "Fledgling survival",
                                         "Adult survival",
                                         "Mating system")),
          parameter2 = factor(parameter2, 
-                             levels = c("Hatching sex ratio",
+                             levels = c(#"Immigrant sex ratio",
+                                        "Hatching sex ratio",
                                         "Nestling survival",
                                         "Groundling survival",
                                         "Fledgling survival",
@@ -3836,13 +5485,15 @@ prop_contribution_table <-
 
 LTRE_heatmap <- 
   prop_contribution_table %>% 
-  filter(parameter1 %in% c("Mating system",
+  filter(parameter1 %in% c(#"Immigrant sex ratio",
+                           "Mating system",
                            "Adult survival",
                            "Fledgling survival",
                            "Groundling survival",
                            "Nestling survival",
                            "Hatching sex ratio") & 
-                  parameter2 %in% c("Mating system",
+                  parameter2 %in% c(#"Immigrant sex ratio",
+                                    "Mating system",
                                     "Adult survival",
                                     "Fledgling survival",
                                     "Groundling survival",
@@ -3871,17 +5522,23 @@ LTRE_heatmap <-
                               "Groundling survival" = expression(italic(S["g"])),
                               "Fledgling survival" = expression(italic(S["f"])),
                               "Adult survival" = expression(italic(phi["a"])),
+                              # "Immigrant sex ratio" = "ISR",
                               "Mating system" = expression(italic("h")))) +
   scale_y_discrete(labels = c("Hatching sex ratio" = expression(italic("\u03C1")),
                               "Nestling survival" = expression(italic(S["n"])),
                               "Groundling survival" = expression(italic(S["g"])),
                               "Fledgling survival" = expression(italic(S["f"])),
                               "Adult survival" = expression(italic(phi["a"])),
+                              # "Immigrant sex ratio" = "ISR",
                               "Mating system" = expression(italic("h")))) +
-  scale_fill_gradient2(low = sex_pal2[1],
+  scale_fill_gradient2(low = sex_pal2[1],#"white", 
                        mid = "white",
-                      high = sex_pal2[2], 
+                      high = sex_pal2[2], #"#c72e29",
                       name = "Proportional contribution of A compared to B") +#,
+  # guide = guide_legend(
+  #   # direction = "horizontal",
+  #   title.position = "top")) +
+  #   # label.position = "bottom")) +
   xlab("Parameter A") +
   ylab("Parameter B")
 
@@ -3899,13 +5556,15 @@ LTRE_heatmap_female <-
   prop_contribution_table %>% 
   mutate(prop_diff2 = ifelse(abs(prop_diff2) == 1, 0, prop_diff2)) %>% 
   filter(sex == "female") %>% 
-  filter(parameter1 %in% c("Mating system",
+  filter(parameter1 %in% c(#"Immigrant sex ratio",
+                           "Mating system",
                            "Adult survival",
                            "Fledgling survival",
                            "Groundling survival",
                            "Nestling survival",
                            "Hatching sex ratio") & 
-                  parameter2 %in% c("Mating system",
+                  parameter2 %in% c(#"Immigrant sex ratio",
+                                    "Mating system",
                                     "Adult survival",
                                     "Fledgling survival",
                                     "Groundling survival",
@@ -3915,7 +5574,7 @@ LTRE_heatmap_female <-
          aes(parameter1, parameter2, fill = prop_diff2)) + 
   geom_tile() +
   facet_grid(. ~ species,
-             labeller = labeller(.cols = species_names)) +
+             labeller = labeller(.cols = species_names)) +#, .rows = analysis_names)) +
   theme(
     axis.text.x  = element_text(size = 7, angle = 45, hjust = 1),
     axis.text.y  = element_text(size = 7),
@@ -3927,7 +5586,7 @@ LTRE_heatmap_female <-
     legend.title = element_text(size = 6),
     axis.ticks = element_line(size = 0.2, colour = "grey40"),
     panel.border = element_rect(color = "grey40", fill = NA),
-    plot.margin = unit(c(0.2, 0.85, 0.2,
+    plot.margin = unit(c(0.2, 0.85, 0.2, #1.08
                          0.55), "cm"),
     strip.text = element_blank()
   ) +
@@ -3942,11 +5601,16 @@ LTRE_heatmap_female <-
                               "Groundling survival" = expression(italic(S["g"])),
                               "Fledgling survival" = expression(italic(S["f"])),
                               "Adult survival" = expression(italic(phi["a"])),
+                              # "Immigrant sex ratio" = "ISR",
                               "Mating system" = expression(italic("h")))) +
-  scale_fill_gradient2(low = sex_pal2[1],
+  scale_fill_gradient2(low = sex_pal2[1],#"white", 
                        mid = "white",
-                       high = sex_pal2[2],
+                       high = sex_pal2[2], #"#c72e29",
                        name = "Proportional contribution of A compared to B") +#,
+  # guide = guide_legend(
+  #   # direction = "horizontal",
+  #   title.position = "top")) +
+  #   # label.position = "bottom")) +
   xlab("Sex-bias in parameter A") +
   ylab("Sex-bias in\nparameter B\n ")
 
@@ -4437,6 +6101,8 @@ BC_detect_dat_A <-
   bind_rows(., filter(status_dat_ad_week, species == "BC")) %>% 
   filter(!is.na(week_numeric)) %>% 
   distinct() %>% 
+  # mutate(month_std = round(scale_by(month_numeric ~ year_numeric, ., scale = 0), digits = 0)) %>% 
+  # mutate(month_std = month_std + abs(min(month_std, na.rm = TRUE))) %>% 
   mutate(week_std = round(scale_by(week_numeric ~ year_numeric, ., scale = 0), digits = 0)) %>% 
   mutate(week_std = week_std + abs(min(week_std, na.rm = TRUE))) %>% 
   dplyr::rename(year = year_numeric)
@@ -4463,6 +6129,8 @@ WBC_detect_dat_A <-
   bind_rows(., filter(status_dat_ad_week, species == "WBC")) %>% 
   filter(!is.na(week_numeric)) %>% 
   distinct() %>% 
+  # mutate(month_std = round(scale_by(month_numeric ~ year_numeric, ., scale = 0), digits = 0)) %>% 
+  # mutate(month_std = month_std + abs(min(month_std, na.rm = TRUE))) %>% 
   mutate(week_std = round(scale_by(week_numeric ~ year_numeric, ., scale = 0), digits = 0)) %>% 
   mutate(week_std = week_std + abs(min(week_std, na.rm = TRUE))) %>% 
   dplyr::rename(year = year_numeric)
@@ -4540,6 +6208,9 @@ status_dat_all_ad <-
   
   # specify empty data as NA
   mutate(across(everything(), ~gsub("^$|^ $", NA, .x))) %>% 
+  
+  # exclude all individuals that died in the nest
+  # filter(Fledged_status == "yes") %>% 
   
   # classify columns
   mutate(sex = as.factor(sex),
@@ -4695,6 +6366,17 @@ WBC_coucal_adult.ddl <-
 
 burnham_S_analysis_run_pFr_dot <- 
   function(proc_data, design_data){
+    # a priori model components for
+    
+    # S (survival probability):
+    # constant model
+    # S.dot = list(formula = ~ 1)
+    
+    # week model
+    # S.Time = list(formula = ~ Time)
+    
+    # week model (quadratic)
+    # S.Quad = list(formula = ~ (I(Time) + I(Time^2)))
     
     # sex-specific model
     S.sex = list(formula = ~sex)
@@ -4798,8 +6480,7 @@ time_varying_plot <-
                       labels = c("Female", "Male")) +
   facet_grid(. ~ species) +
   theme_bw() +
-  theme(text = element_text(family = "Verdana"),
-        axis.title = element_text(size = 12),
+  theme(axis.title = element_text(size = 12),
         axis.text  = element_text(size = 10), 
         strip.text = element_text(size = 12),
         panel.grid.major = element_blank(),
@@ -4827,7 +6508,7 @@ constant_plot <-
     facet_grid(. ~ species) +
     theme_bw() +
     theme(
-      text = element_text(family = "Verdana"),
+      # text = element_text(family = "Verdana"),
       axis.title = element_blank(),
       axis.text  = element_text(size = 10), 
       strip.text = element_text(size = 12),
@@ -4919,6 +6600,8 @@ age_structure_plot <-
   facet_wrap(. ~ year) +
   theme_bw() +
   theme(text = element_text(family = "Verdana"),
+    # panel.background = element_rect(fill = "transparent", colour = NA),
+    # plot.background = element_rect(fill = "transparent", colour = NA),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     axis.ticks.length = unit(0.1, "cm"),
