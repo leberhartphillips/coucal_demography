@@ -8,91 +8,14 @@
 !*/
 
 # if the files to be tracked are in subdirectories
-# parameter estimates prior model
-!R/analysis/analysis_egg_survival.R
-!R/analysis/analysis_clutch_size.R
-!R/analysis/analysis_hatching_sex_ratio.R
-!R/analysis/analysis_immigration_sex_ratio.R
-!R/analysis/analysis_mating_system.R
-!R/analysis/analysis_fledge_age.R
-!R/analysis/analysis_age_first_flight.R
-!R/analysis/analysis_fledge_age_modeling.R
-!R/analysis/analysis_age_first_flight_modelling.R
-
-!R/analysis/analysis_sensitivity_analysis_JSR.R
-!R/analysis/analysis_JSR_bootstrap.R
-!R/analysis/analysis_WBC_adult_survival_bootstrap.R
-!R/analysis/analysis_age_distribution_plumage.R
-
-# functions
-!R/functions/function_run_bootstrap_juv_hazd_ad_surv_ASR().R
-!R/functions/function_run_bootstrap_hazard_ASR().R
-!R/functions/function_bootstrap_hazard_data().R
-!R/functions/function_bootstrap_juv_hazd_ad_surv_ASR().R
-!R/functions/function_bootstrap_hazard_ASR().R
-!R/functions/function_sex_diff_hazard().R
-!R/functions/function_make_mprime_and_treat_summary_JSR().R
-!R/functions/function_LTRE_analysis_JSR().R
-!R/functions/function_JSR_bootstrap_deter().R
-!R/functions/function_sensitivity_analysis_JSR().R
-
-# species-specific bootstrapped analysis
-!R/analysis/analysis_hazard_boot.R
-
-# results of bootstrapping
-!R/results/results_hazard_ASR_distributions.R
-!R/results/results_sex_diff_hazard.R
-!R/results/results_hazard_rate.R
-
-# tables and figures
-!products/figures/jpg
-!products/tables/png
-
-# playground
-!R/junkyard/sensitivity_JSR_workflow.R
-!R/analysis/analysis_body_condition_fledglings.R
-
-#!data/mol_sex.rds
-#!data/chicks_2006_2020.rds
-#!data/BaSTA_checked_life_table_females_2006-2020.rds
-#!data/ceuta_egg_chick_female_data.rds
-#!data/raw_encounter_histories_females_2006_2020.rds
-#!data/raw_life_table_females_2006_2020.rds
-!data/raw/Egg_surv_data_2001_2019_20210524.xls
-
-!output/multibasta_output_females_min_age_1_2006-2020.rds
-!output/stats_eggv_mod.rds
-!output/stats_polyandry_age_mod.rds
-!output/stats_renesting_mod.rds
-!output/stats_laydate_mod.rds
-!output/stats_chick_mod.rds
-!output/age_estimate_uncertainty_bootstraps.rds
-
-!products/figures/Figure_1.jpg
-!products/figures/Figure_2.jpg
-!products/figures/Figure_3.jpg
-!products/figures/Figure_4.png
-!products/figures/Figure_5.jpg
-!products/figures/Figure_S1.jpg
-!products/figures/Figure_S2.png
-!products/figures/Figure_S3.jpg
-!products/figures/Figure_S4.jpg
-!products/figures/Figure_S5.jpg
-!products/figures/Figure_S6.jpg
-!products/figures/Figure_S7.jpg
-!products/figures/Figure_S8.jpg
-
-!products/tables/Table_S1.png
-!products/tables/Table_S2.png
-!products/tables/Table_S3.png
-!products/tables/Table_S4.png
-!products/tables/Table_S5.png
-!products/tables/Table_S6.png
-
-!Supplementary_Material_A.html
 !Supplementary_Material_A.qmd
-!Supplementary_Material_A_.html
-!Supplementary_Material_A_.qmd
+!Supplementary_Material_A.html
+
+!data/
+
+!images/
+
+!output/
 
 !license.txt
 .Rproj.user

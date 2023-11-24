@@ -1400,7 +1400,7 @@ Set the 'niter' to run the bootstrap over several iterations (e.g., 10000). For 
 ```{r}
 niter = 10000
 set.seed(14)
-output.directory = "output/bootstraps/"
+output.directory = "output/bootstraps/raw/"
 ```
 
 run bootstrap procedure on White-browed Coucals
@@ -1413,14 +1413,14 @@ WBC_adult_survival_CJS_bootstrap_result <-
            iter_add = 1,
            first_year = 2005,
            bootstrap_name = "WBC_boot_one",
-           prefix_number = "boot_one_",
-           out_directory = "output/bootstraps/")
+           prefix_number = "boot_CJS_",
+           out_directory = "output/bootstraps/raw")
 ```
 
 ```{r, eval = FALSE}
 # save the output
 saveRDS(WBC_adult_survival_CJS_bootstrap_result,
-        file = "output/bootstraps/WBC_adult_survival_CJS_bootstrap_result.rds")
+        file = "output/bootstraps/raw/WBC_adult_survival_CJS_bootstrap_result.rds")
 
 # tidy it up
 WBC_adult_survival_CJS_bootstrap_tidy <- 
@@ -1428,13 +1428,13 @@ WBC_adult_survival_CJS_bootstrap_tidy <-
 
 # save the tidy version
 saveRDS(WBC_adult_survival_CJS_bootstrap_tidy,
-        file = "output/bootstraps/WBC_adult_survival_CJS_bootstrap_tidy.rds")
+        file = "output/bootstraps/tidy/WBC_adult_survival_CJS_bootstrap_tidy.rds")
 ```
 
 ```{r, echo = FALSE}
 # Load bootstraps of White-browed Coucal adult annual survival analysis
 WBC_boot_out <- 
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/wrangled/WBC_adult_survival_CJS_bootstrap_tidy.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/tidy/WBC_adult_survival_CJS_bootstrap_tidy.rds")
 ```
 
 Derive the Black Coucal sex-specific survival rates by transforming White-browed Coucal sex-specific survival rates to reflect the \~0.7 ASR that is observed annually
@@ -3185,7 +3185,7 @@ parameter_distributions <-
 
 ```{r, eval = FALSE, echo = FALSE}
 saveRDS(object = parameter_distributions, 
-        file = "output/parameter_distributions.rds")
+        file = "output/tidy/parameter_distributions.rds")
 ```
 
 ## Stochastic Demographic Simulation
@@ -3197,7 +3197,7 @@ set.seed(14)
 
 ```{r, echo = FALSE}
 parameter_distributions <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/parameter_distributions.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/bootstraps/tidy/parameter_distributions.rds")
 ```
 
 ### Black Coucals
@@ -3330,10 +3330,10 @@ Save simulation output
 
 ```{r, eval = FALSE}
 saveRDS(object = BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc, 
-        file = "output/bootstraps/cooked/BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds")
+        file = "output/bootstraps/tidy/BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds")
 
 saveRDS(object = WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc, 
-        file = "output/bootstraps/cooked/WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds")
+        file = "output/bootstraps/tidy/WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds")
 ```
 
 clean up the output from the bootstrap procedure and save as rds
@@ -3341,13 +3341,13 @@ clean up the output from the bootstrap procedure and save as rds
 ```{r, eval=FALSE}
 BC_hazard_rate_boot_tidy <- 
   hazard_boot_out_wrangle(species = "BC", niter = 1000, 
-                          output_dir = "output/bootstraps/cooked/",
+                          output_dir = "output/bootstraps/tidy/",
                           rds_file = 
                            "_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc")
 
 WBC_hazard_rate_boot_tidy <- 
   hazard_boot_out_wrangle(species = "WBC", niter = 1000, 
-                          output_dir = "output/bootstraps/cooked/",
+                          output_dir = "output/bootstraps/tidy/",
                           rds_file = 
                             "_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc")
 ```
@@ -3355,13 +3355,13 @@ WBC_hazard_rate_boot_tidy <-
 save model output
 
 ```{r, eval=FALSE}
-saveRDS(object = BC_hazard_rate_boot_tidy_trans, 
+saveRDS(object = BC_hazard_rate_boot_tidy, 
         file = 
-          "output/bootstraps/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
+          "output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
 
 saveRDS(object = WBC_hazard_rate_boot_tidy, 
         file = 
-          "output/bootstraps/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+          "output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 ```
 
 ## Sex-biased Demographic stages
@@ -3369,11 +3369,11 @@ saveRDS(object = WBC_hazard_rate_boot_tidy,
 ```{r, echo=FALSE}
 # load output
 BC_hazard_rate_boot_tidy <-
-  readRDS("/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/bootstraps/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
+  readRDS("/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <-
-  readRDS("/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/bootstraps/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 ```
 
 Visualize the sex-specific variation in cumulative survival and hazard rate of premature individuals derived from the stochastic simulation
@@ -3968,7 +3968,7 @@ background <-
 
 ```{r, echo=FALSE}
 
-# jpeg(filename = "/Users/luketheduke2/ownCloud/coucal_ASR/R_project/products/figures/jpg/demographic_differences_plot.jpeg",
+# jpeg(filename = "/Users/luketheduke2/ownCloud/coucals/final/R_project/products/figures/jpg/demographic_differences_plot.jpeg",
 #      # compression = "none",
 #      width = 4.75,
 #      height = 2,
@@ -3989,11 +3989,11 @@ grid::popViewport()
 ```{r, echo=FALSE}
 # load output
 BC_hazard_rate_boot_tidy <-
-  readRDS("/Users/luketheduke2/ownCloud/coucal_ASR/R_project/output/bootstraps/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
+  readRDS("/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <-
-  readRDS("/Users/luketheduke2/ownCloud/coucal_ASR/R_project/output/bootstraps/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -4058,7 +4058,7 @@ Figure_2b <-
 Figure_2b
 
 # ggsave(Figure_2b,
-#        filename = "/Users/luketheduke2/ownCloud/coucal_ASR/R_project/products/figures/ASR_plot.jpeg",
+#        filename = "/Users/luketheduke2/ownCloud/coucals/final/R_project/products/figures/ASR_plot.jpeg",
 #        width = 4.75,
 #        height = 1.59, units = "in",
 #        dpi = 600,
@@ -5046,22 +5046,22 @@ saveRDS(object = WBC_Mprime_sensitivity_analysis_female,
 
 ```{r, echo=FALSE}
 BC_treat_sensitivity_analysis <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds")
 
 BC_Mprime_sensitivity_analysis_male <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR.rds")
 
 BC_Mprime_sensitivity_analysis_female <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR.rds")
 
 WBC_treat_sensitivity_analysis <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds")
 
 WBC_Mprime_sensitivity_analysis_male <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_ASR.rds")
 
 WBC_Mprime_sensitivity_analysis_female <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucal_ASR/coucal_demography/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds")
 ```
 
 ```{r}
@@ -5189,7 +5189,7 @@ LTRE_ASR_plot <-
 ```
 
 ```{r, echo=FALSE}
-# jpeg(filename = "/Users/luketheduke2/ownCloud/coucal_ASR/R_project/products/figures/LTRE_ASR_plot.jpeg",
+# jpeg(filename = "/Users/luketheduke2/ownCloud/coucals/final/R_project/products/figures/LTRE_ASR_plot.jpeg",
 #      # compression = "none",
 #      width = 4.75,
 #      height = 3,

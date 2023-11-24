@@ -48,9 +48,9 @@ south-western Tanzania.
 
 #### Repository Contents
 
-- [`Supplementary_Material_A.qmd`](https://github.com/leberhartphillips/coucal_demography/blob/main/R/Supplementary_Material_A.qmd)
+-   [`Supplementary_Material_A.qmd`](https://github.com/leberhartphillips/coucal_demography/blob/main/R/Supplementary_Material_A.qmd)
     Quarto source code for vignette of analysis
-- [`Supplementary_Material_A.html`](https://github.com/leberhartphillips/coucal_demography/blob/main/R/Supplementary_Material_A.html)
+-   [`Supplementary_Material_A.html`](https://github.com/leberhartphillips/coucal_demography/blob/main/R/Supplementary_Material_A.html)
     HTML vignette of analysis for reproducibility of results
 
 [**`data/raw/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/data)
@@ -64,29 +64,30 @@ south-western Tanzania.
 -   [`Coucal_adults_survival_2001-2019_20200129.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/Coucal_adults_survival_2001-2019_20200129.csv)
 -   [`age_classes_2001-2020_2.xlsx`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/age_classes_2001-2020_2.xlsx)
 
-[**`outout/bootstraps/-raw/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/)
+[**`outout/bootstraps/raw/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/)
 folder containing all the raw runs of the stochastic simulation (10000
-rds files for each species)
+rds files for each species) and the adult CJS bootstrap (10000 rds
+files)
 
--   10000 rds files for black coucal (e.g.,
+-   10000 rds files for black coucal hazard and ASR model (e.g.,
     [`BC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/BC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds))
--   10000 rds files for white-browed coucal (e.g.,
+-   10000 rds files for white-browed coucal hazard and ASR model (e.g.,
     [`WBC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/WBC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds))
-
-[**`output/bootstraps/cooked/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/cooked)
-folder containing all the cooked summaries of the raw bootstraps
-contained in the **`bootstraps/raw/`** folder
-
--   [`BC_haz_sur_ASR_boot_tidy_stoc_trans.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds)
--   [`WBC_haz_sur_ASR_boot_tidy_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds)
+-   10000 rds files for white-browed coucal CJS adult survival bootstrap
+    (e.g.,
+    [`WBC_boot_CJS_5802.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/WBC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds))
 
 [**`output/bootstraps/tidy/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy)
 folder containing the tidy summaries of the stochastic simulation
 
+-   [`BC_haz_sur_ASR_boot_tidy_stoc_trans.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds)
+-   [`BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds)
+-   [`WBC_haz_sur_ASR_boot_tidy_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds)
 -   [`WBC_adult_survival_CJS_bootstrap_tidy.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/WBC_adult_survival_CJS_bootstrap_tidy.rds)
+-   [`WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/WBC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds)
 -   [`parameter_distributions.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/parameter_distributions.rds)
 
-[**`output/bootstraps/sensitivity_analysis/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis)
+[**`output/sensitivity_analysis/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis)
 folder containing the output of the sensitivity analysis
 
 -   [`BC_treat_sensitivity_analysis_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds)
@@ -112,3 +113,6 @@ folder containing the output of the age at fledge or flight mixed models
 -   [`Stats_mod_fledge_age_WBC.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/mod_stats/Stats_mod_fledge_age_WBC.rds)
 -   [`Stats_mod_flight_age_BC.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/mod_stats/Stats_mod_flight_age_BC.rds)
 -   [`Stats_mod_flight_age_WBC.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/mod_stats/Stats_mod_flight_age_WBC.rds)
+
+[**`images/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/images)
+folder containing the graphic in the Readme
