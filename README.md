@@ -42,10 +42,12 @@ south-western Tanzania.
 
 #### Repository Contents
 
--   [`Supplementary_Material_A.qmd`](https://github.com/leberhartphillips/coucal_demography/blob/main/R/Supplementary_Material_A.qmd)
+- [`Supplementary_Material_A.qmd`](https://github.com/leberhartphillips/coucal_demography/blob/main/Supplementary_Material_A.qmd)
     Quarto source code for vignette of analysis
--   [`Supplementary_Material_A.html`](https://github.com/leberhartphillips/coucal_demography/blob/main/R/Supplementary_Material_A.html)
+- [`Supplementary_Material_A.html`](https://github.com/leberhartphillips/coucal_demography/blob/main/Supplementary_Material_A.html)
     HTML vignette of analysis for reproducibility of results
+- [`coucal_demography.Rproj`](https://github.com/leberhartphillips/coucal_demography/blob/main/coucal_demography.Rproj)
+    RStudio project to run and reproduce results
 
 [**`data/raw/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/data)
 
