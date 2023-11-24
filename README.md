@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # Reproducible datasets and code for:
 
 ## Early-life demographic processes do not drive adult sex ratio biases and mating systems in sympatric coucal species

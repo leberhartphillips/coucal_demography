@@ -11,11 +11,11 @@
 !Supplementary_Material_A.qmd
 !Supplementary_Material_A.html
 
-!data/
+!data
 
-!images/
+!images
 
-!output/
+!output
 
 !license.txt
 .Rproj.user
