@@ -10,11 +10,13 @@
 
 !coucal_demography.Rproj
 
-!data/raw/age_classes_2001-2020_2.xlsx
+!data/raw/*
 
-!images
+!images/*
 
-!output/bootstraps/tidy/parameter_distributions.rds
+!output/*
 
 !license.txt
+
+!.gitignore
 .Rproj.user
