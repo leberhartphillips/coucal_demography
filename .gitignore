@@ -1,22 +1,20 @@
 # Ignore everything
 *
 # ...even if they are in subdirectories
-!*/.gitignore
+!/.gitignore
 
 .Rproj.user
 
 # But not these files...
-!*/README.html
+!/README.html
 
-!*/Supplementary_Material_A.qmd
+!Supplementary_Material_A.qmd
 
-!/Supplementary_Material_A.html
+!Supplementary_Material_A.html
 
-!*/coucal_demography.Rproj
+!coucal_demography.Rproj
 
-
-
-!/data/**
+!data/**
 
 !images/*
 
