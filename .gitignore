@@ -16,12 +16,10 @@
 # ...even if they are in subdirectories
 !*/
 
-!/data/raw/*
+!/data/**
 
 !images/*
 
 !output/**
-
-!test/*
 
 !license.txt
