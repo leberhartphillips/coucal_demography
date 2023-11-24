@@ -560,6 +560,15 @@ approx_sd <- function(x1, x2){
 }
 ```
 
+
+#### `%!in%`
+
+function that does the opposite of `%in%` -- useful for wrangling
+```{r}
+`%!in%` = Negate(`%in%`)
+```
+
+
 #### `matrix_ASR()`
 
 calculates the ASR of the population based on the two-sex two-stage projection matrix built by the `coucal_matrix()` function (below).
@@ -1388,6 +1397,30 @@ White_browed_Coucal_adult_CJS_ch <-
   distinct()
 ```
 
+```{r, echo = FALSE}
+status_dat_all %>% 
+  filter(species %in% c("BC", "WBC")) %>% 
+  group_by(species, sex, event) %>% 
+  dplyr::summarise(n_inds = n_distinct(ind_ID)) %>% 
+  mutate(stage = "juvenile")
+
+status_dat_all %>% 
+  filter(species %in% c("BC", "WBC")) %>% 
+  group_by(species) %>% 
+  dplyr::summarise(n_broods = n_distinct(nest_ID),
+                   n_years = n_distinct(year),
+                   min_year = min(year),
+                   max_year = max(year))
+                   
+
+adult_sample_summary <- 
+  detect_dat %>% 
+  filter(species %in% c("BC", "WBC") & age_status == "A") %>% 
+  group_by(species, sex) %>% 
+  dplyr::summarise(n_obs = n_distinct(ring_ID)) %>% 
+  mutate(stage = "adult")
+```
+
 ## Bootstrapped mark-recapture analysis of White-browed Coucal adults
 
 Here we resample the annual encounter history of adult White-browed Coucals and conduct a CJS mark-recapture analysis to derive the mean estimate and variance in annual apparent survival.
@@ -1710,9 +1743,11 @@ egg_surv_data <-
   arrange(nest_ID)
 
 #### sample size summary ----
-# egg_surv_data %>% 
-#   dplyr::group_by(species) %>% 
-#   dplyr::summarise(n_nests = n_distinct(nest_ID))
+# egg_surv_data %>%
+#   dplyr::group_by(species) %>%
+#   dplyr::summarise(n_nests = n_distinct(nest_ID),
+#                    n_eggs = sum(n_eggs),
+#                    n_chicks = sum(n_chicks))
 
 BC_egg_survival <- 
   lme4::glmer(cbind(n_alive_eggs, n_dead_eggs) ~ 
@@ -1799,10 +1834,12 @@ egg_HSR_data <-
   mutate(species_plot = ifelse(species == "WBC", 2.2, 0.8),
          species_plot2 = ifelse(species == "WBC", 2, 1))
 
-# sample size summary
-# egg_HSR_data %>% 
-#   dplyr::group_by(species) %>% 
-#   dplyr::summarise(n_distinct(nest_ID))
+#### sample size summary ----
+# egg_HSR_data %>%
+#   dplyr::group_by(species) %>%
+#   dplyr::summarise(n_nests = n_distinct(nest_ID),
+#                    n_eggs = sum(n_eggs),
+#                    n_chicks = sum(n_chicks))
 
 mod_HSR_BC <- 
   lme4::glmer(cbind(male_eggs, female_eggs) ~ 
@@ -1899,6 +1936,11 @@ HSR_plot
 #        height = 4, units = "in")
 
 rm(egg_data, egg_HSR_data, mod_HSR_BC, mod_HSR_WBC)
+```
+
+```{r}
+# bind_rows(coucal_HSR %>% dplyr::select(trait, species, mean, CI_low, CI_high, n_nests, n_years),
+# coucal_egg_survival %>% dplyr::select(trait, species, mean, CI_low, CI_high, n_nests, n_years))
 ```
 
 ### Age at fledging (transition from nestling to groundling)
@@ -5331,10 +5373,29 @@ mapviewOptions(basemaps = c("Esri.WorldImagery"),
                legend.pos = "bottomleft")
 
 # check out the spatial data
-mapview(coucal_wp[coucal_wp$ring_ID %in% "GN 76751",], zcol = "julian_date",
-        layer.name = "WBC radio tagging",
+mapview(coucal_wp, zcol = "julian_date",
+        layer.name = "Coucal offspring radio tagging",
         layers.control.pos = "topright")
 ```
+
+```{r, echo = FALSE}
+# coucal_wp %>% 
+#   as.data.frame() %>% 
+#   mutate(date = date(timestamp)) %>% 
+#   group_by(species, ring_ID) %>% 
+#   dplyr::summarise(min_time = min(date),
+#                    max_time = max(date),
+#                    n_dates = n_distinct(date)) %>% 
+#   mutate(time_window = as.numeric(max_time - min_time)) %>% 
+#   mutate(encounter_rate = time_window/n_dates) %>% 
+#   ungroup() %>% 
+#   group_by(species) %>% 
+#   dplyr::summarise(mean_ER = mean(encounter_rate),
+#             sd_ER = sd(encounter_rate),
+#             mean_TW = mean(time_window),
+#             sd_TW = sd(time_window))
+```
+
 
 Set-up the spatial data and create a trajectory format for analysis
 ```{r, message=FALSE, results='hide', warning=FALSE}
@@ -5975,6 +6036,41 @@ WBC_adult_ch <-
   mutate(sex = as.factor(sex),
          year = as.factor(year)) %>%
   dplyr::select(ch, sex, year)
+
+time_window <-
+  bind_rows(detect_status_BC, detect_status_WBC) %>%
+  filter(ring_ID %!in% c("GN52396", "GN56850", "GN56873", "GN90552")) %>% 
+  dplyr::select(year, ring_ID, std_week_last_obs, std_week_first_obs) %>% 
+  mutate(time_window = std_week_last_obs - std_week_first_obs + 1) %>% 
+  arrange(time_window)
+
+# time_window %>% 
+#   filter(ring_ID %in% c("GN52396", "GN56850", "GN56873", "GN90552"))
+
+# time_window %>% 
+#   group_by(ring_ID, year) %>% 
+#   dplyr::summarise(n_rows = n()) %>% 
+#   arrange(desc(n_rows))
+
+bind_rows(Black_Coucal_adult_weekly_Burnham_ch %>% mutate(species = "BC"), 
+          White_browed_Coucal_adult_weekly_Burnham_ch %>% mutate(species = "WBC")) %>% 
+  filter(ring_ID %!in% c("GN52396", "GN56850", "GN56873", "GN90552", "GN52401")) %>% 
+  mutate(event = ifelse(str_detect(ch, "11"), 1, 0)) %>% 
+  mutate(encounter_freq = str_count(ch, "1")) %>% 
+  mutate(encounter_freq = ifelse(event == 1, encounter_freq - 1, encounter_freq)) %>% 
+  left_join(., time_window, by = c("ring_ID", "year")) %>% 
+  mutate(encounter_rate = encounter_freq/time_window) %>% 
+  group_by(species, sex) %>% 
+  dplyr::summarise(mean_tw = mean(time_window),
+                   max_tw = max(time_window),
+                   min_tw = min(time_window),
+                   sd_tw = sd(time_window),
+                   mean_er = mean(encounter_rate),
+                   max_er = max(encounter_rate),
+                   min_er = min(encounter_rate),
+                   sd_er = sd(encounter_rate),
+                   n_inds = n_distinct(ring_ID),
+                   n_years = n_distinct(year))
 ```
 
 Run the survival analysis in RMark, extract the model predictions, and plot the results.
