@@ -318,7 +318,7 @@ bootstrap_adult_survival_CJS <-
            species,
            iter_add,
            prefix_number,
-           out_directory = "/output/bootstraps/raw/") {
+           out_directory = "output/bootstraps/raw/") {
     
     # specify the bootstrapped data samples (from the previous function)
     adult_ch <- coucal_boot_list[["adult_boot"]]
@@ -1298,9 +1298,6 @@ status_dat_all <-
   # specify empty data as NA
   mutate(across(everything(), ~gsub("^$|^ $", NA, .x))) %>% 
   
-  # exclude all individuals that died in the nest
-  # filter(Fledged_status == "yes") %>% 
-  
   # classify columns
   mutate(sex = as.factor(sex),
          ageC = as.numeric(ageC),
@@ -1434,7 +1431,7 @@ saveRDS(WBC_adult_survival_CJS_bootstrap_tidy,
 ```{r, echo = FALSE}
 # Load bootstraps of White-browed Coucal adult annual survival analysis
 WBC_boot_out <- 
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/bootstraps/tidy/WBC_adult_survival_CJS_bootstrap_tidy.rds")
+  readRDS(file = "output/bootstraps/tidy/WBC_adult_survival_CJS_bootstrap_tidy.rds")
 ```
 
 Derive the Black Coucal sex-specific survival rates by transforming White-browed Coucal sex-specific survival rates to reflect the \~0.7 ASR that is observed annually
@@ -3197,7 +3194,7 @@ set.seed(14)
 
 ```{r, echo = FALSE}
 parameter_distributions <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/bootstraps/tidy/parameter_distributions.rds")
+  readRDS(file = "output/bootstraps/tidy/parameter_distributions.rds")
 ```
 
 ### Black Coucals
@@ -3260,7 +3257,7 @@ BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc <-
            fledge_age_distM = fledge_age_distM_BC,
            flight_age_distF = flight_age_distF_BC,
            flight_age_distM = flight_age_distM_BC, 
-           output.directory = "/output/bootstraps/raw")
+           output.directory = "output/bootstraps/raw")
 ```
 
 ### White-browed Coucals
@@ -3323,7 +3320,7 @@ WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc <-
            fledge_age_distM = fledge_age_distM_WBC,
            flight_age_distF = flight_age_distF_WBC,
            flight_age_distM = flight_age_distM_WBC,
-           output.directory = "/output/bootstraps/raw")
+           output.directory = "output/bootstraps/raw")
 ```
 
 Save simulation output
@@ -3369,11 +3366,11 @@ saveRDS(object = WBC_hazard_rate_boot_tidy,
 ```{r, echo=FALSE}
 # load output
 BC_hazard_rate_boot_tidy <-
-  readRDS("/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
+  readRDS("output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <-
-  readRDS("/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 ```
 
 Visualize the sex-specific variation in cumulative survival and hazard rate of premature individuals derived from the stochastic simulation
@@ -3582,9 +3579,6 @@ WBC_surv_plot <-
            label = "fledgling",
            color = "black", size = 3, fontface = 'italic', hjust = 0.5)
 
-# BC_coxme <- coxme(Surv(exit, event) ~ sex + (1|year) + (1|nest_ID), data =  status_dat_all %>% filter(species == "BC"))  
-# summary(BC_coxme)
-
 BC_survfit_sex <- survfit(Surv(exit, event) ~ sex , data = status_dat_all %>% filter(species == "BC"))
 
 BC_plot <- 
@@ -3603,9 +3597,6 @@ BC_plot <-
              font.legend = c(10, "plain", "black"),
              legend.title = "",
              legend.labs = c("Female", "Male"))
-
-# WBC_coxme <- coxme(Surv(exit, event) ~ sex + (1|year) + (1|nest_ID), data =  status_dat_all %>% filter(species == "WBC"))  
-# summary(WBC_coxme)
 
 WBC_survfit_sex <- survfit(Surv(exit, event) ~ sex , data = status_dat_all %>% filter(species == "WBC"))
 
@@ -3638,26 +3629,21 @@ BC_plot1 <-
         legend.text=element_text(size = 10),
         legend.title = element_blank(),
         legend.key.size = unit(0.3, 'cm'),
-        # panel.border = element_blank(),
         strip.background = element_blank(),
         strip.text = element_text(size = 12, face = "italic"),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        # axis.ticks.y = element_blank(),
         axis.ticks = element_line(size = 0.25, colour = "grey40"),
         axis.ticks.length = unit(0.1, "cm"),
         axis.text.x  = element_blank(),
         axis.text.y  = element_text(size = 8),
         panel.grid.major.x = element_line(colour = "grey70", size = 0.1),
-        # plot.title = element_text(hjust = 0.5, face = "italic"),
         legend.background = element_rect(fill="transparent"),
         plot.background = element_rect(fill = 'transparent', color = NA)) +
   scale_x_continuous(limits = c(0, 70), 
                      breaks = seq(0, 70, by = 5), 
                      expand = c(0.01, 0.01),
-                     labels = as.character(seq(0, 70, by = 5))) +#c(-60, -30, 0, 30, 60)) +
-  # ylab(expression(paste("Cumulative survival" %+-%  "95% CI", sep = ""))) +
-  # xlab("Age (Days since hatching)") +
+                     labels = as.character(seq(0, 70, by = 5))) +
   scale_color_manual(values = sex_pal2,
                      labels = c("Female", "Male")) +
   scale_fill_manual(values = sex_pal2,
@@ -3693,7 +3679,6 @@ WBC_plot1 <-
   luke_theme +
   theme(legend.position = "none",
         plot.margin = unit(c(0,0,0.5,0), "cm"),
-        # panel.border = element_blank(),
         strip.background = element_blank(),
         strip.text = element_text(size = 12, face = "italic"),
         axis.title.x = element_text(size = 12),
@@ -3701,17 +3686,13 @@ WBC_plot1 <-
         axis.ticks.length = unit(0.1, "cm"),
         axis.text.x  = element_text(size = 8),
         axis.text.y  = element_text(size = 8),
-        # axis.ticks.y = element_blank(),
         legend.background = element_blank(),
         panel.grid.major.x = element_line(colour = "grey70", size = 0.1),
         plot.background = element_rect(fill = 'transparent', color = NA)) +
-        # axis.title.y = element_blank(),
-        # axis.text.y = element_blank()) +
   scale_x_continuous(limits = c(0, 70), 
                      breaks = seq(0, 70, by = 5), 
                      expand = c(0.01, 0.01),
-                     labels = as.character(seq(0, 70, by = 5))) +#c(-60, -30, 0, 30, 60)) +
-  # xlab("Age (Days since hatching)") +
+                     labels = as.character(seq(0, 70, by = 5))) +
   scale_color_manual(values = sex_pal2) +
   scale_fill_manual(values = sex_pal2) +
   ylab("                                    Cumulative survival ± 95% CI") +
@@ -3781,7 +3762,7 @@ plot(cox.zph(WBC_cox_ph_sex, transform = "identity"))
 
 #### Visualising offspring survival dynamics
 Survival dynamics of radio-marked Black (top) and White-browed (bottom) Coucal offspring over the first 70 days since hatching. A) Kaplan-Meier plots of the sex-specific cumulative survival. B) Inverted sex-specific smoothed hazard functions (right) showing the estimated daily survival rate. Fine lines show the estimated function of survival for a bootstrap that randomly sampled one offspring per brood to account for non-independence. Thick lines show the average trend for the bootstrapping procedure. Density plots show the sex-specific posterior distributions of age-points of nest departure and first flight given the bootstrap simulation.
-```{r, echo=FALSE}
+```{r}
 juvenile_survival_plot <-
   (BC_density_plotA / BC_plot1 / WBC_density_plot / WBC_plot1) + 
   plot_layout(heights = unit(c(0.5, 5, 0.5, 5), c('cm', 'cm', 'cm', 'cm')),
@@ -3792,14 +3773,15 @@ juvenile_hazard_plot <-
   plot_layout(heights = unit(c(0.5, 5, 0.5, 5), c('cm', 'cm', 'cm', 'cm')),
               widths = unit(c(7, 7, 7, 7), c('cm', 'cm', 'cm', 'cm')))
 
-# juvenile_survival_plot + juvenile_hazard_plot
-
 coucal_juvenile_plot <- 
   (juvenile_survival_plot | juvenile_hazard_plot) + 
   plot_layout(heights = unit(c(11, 11), c('cm', 'cm')),
               widths = unit(c(7, 7), c('cm', 'cm'))) & 
   theme(plot.margin = unit(c(0,0,0,0.25),"cm"))
+```
 
+
+```{r, echo=FALSE}
 coucal_juvenile_plot
   
 # ggsave(plot = coucal_juvenile_plot,
@@ -3989,11 +3971,11 @@ grid::popViewport()
 ```{r, echo=FALSE}
 # load output
 BC_hazard_rate_boot_tidy <-
-  readRDS("output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")#/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
+  readRDS("output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <-
-  readRDS("output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")#"/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -5026,42 +5008,42 @@ WBC_Mprime_sensitivity_analysis_female <-
 
 ```{r, echo=FALSE, eval=FALSE}
 saveRDS(object = BC_treat_sensitivity_analysis, 
-        file = "/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR_trans.rds")
+        file = "output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR_trans.rds")
 
 saveRDS(object = BC_Mprime_sensitivity_analysis_male, 
-        file = "/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR_trans.rds")
+        file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR_trans.rds")
 
 saveRDS(object = BC_Mprime_sensitivity_analysis_female, 
-        file = "/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR_trans.rds")
+        file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR_trans.rds")
 
 saveRDS(object = WBC_treat_sensitivity_analysis, 
-        file = "/output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds") 
+        file = "output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds") 
 
 saveRDS(object = WBC_Mprime_sensitivity_analysis_male, 
         file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_ASR.rds")
 
 saveRDS(object = WBC_Mprime_sensitivity_analysis_female, 
-        file = "/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds")
+        file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds")
 ```
 
 ```{r, echo=FALSE}
 BC_treat_sensitivity_analysis <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR_trans.rds")
+  readRDS(file = "output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR_trans.rds")
 
 BC_Mprime_sensitivity_analysis_male <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR_trans.rds")
+  readRDS(file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR_trans.rds")
 
 BC_Mprime_sensitivity_analysis_female <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR_trans.rds")
+  readRDS(file = "output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR_trans.rds")
 
 WBC_treat_sensitivity_analysis <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds")
+  readRDS(file = "output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds")
 
 WBC_Mprime_sensitivity_analysis_male <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_ASR.rds")
+  readRDS(file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_ASR.rds")
 
 WBC_Mprime_sensitivity_analysis_female <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds")
+  readRDS(file = "output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds")
 ```
 
 ```{r}
