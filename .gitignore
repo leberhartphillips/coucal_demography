@@ -1,6 +1,9 @@
 # Ignore everything
 *
 
+!.gitignore
+.Rproj.user
+
 # But not these files...
 !README.html
 
@@ -10,13 +13,13 @@
 
 !coucal_demography.Rproj
 
-!data/raw/*
+# ...even if they are in subdirectories
+!*/
+
+!data/raw/
 
 !images/*
 
 !output/*
 
 !license.txt
-
-!.gitignore
-.Rproj.user
