@@ -1434,7 +1434,7 @@ saveRDS(WBC_adult_survival_CJS_bootstrap_tidy,
 ```{r, echo = FALSE}
 # Load bootstraps of White-browed Coucal adult annual survival analysis
 WBC_boot_out <- 
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/tidy/WBC_adult_survival_CJS_bootstrap_tidy.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/bootstraps/tidy/WBC_adult_survival_CJS_bootstrap_tidy.rds")
 ```
 
 Derive the Black Coucal sex-specific survival rates by transforming White-browed Coucal sex-specific survival rates to reflect the \~0.7 ASR that is observed annually
@@ -3185,7 +3185,7 @@ parameter_distributions <-
 
 ```{r, eval = FALSE, echo = FALSE}
 saveRDS(object = parameter_distributions, 
-        file = "output/tidy/parameter_distributions.rds")
+        file = "output/bootstraps/tidy/parameter_distributions.rds")
 ```
 
 ## Stochastic Demographic Simulation
@@ -3989,11 +3989,11 @@ grid::popViewport()
 ```{r, echo=FALSE}
 # load output
 BC_hazard_rate_boot_tidy <-
-  readRDS("/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/cooked/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
+  readRDS("output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")#/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")
 
 # load output
 WBC_hazard_rate_boot_tidy <-
-  readRDS("/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/cooked/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")#"/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 ```
 
 ```{r, message=FALSE, warning=FALSE}
