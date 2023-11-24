@@ -3993,7 +3993,7 @@ BC_hazard_rate_boot_tidy <-
 
 # load output
 WBC_hazard_rate_boot_tidy <-
-  readRDS("output/bootstraps/tidy/BC_haz_sur_ASR_boot_tidy_stoc_trans.rds")#"/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
+  readRDS("output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")#"/Users/luketheduke2/ownCloud/coucals/final/R_project/output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds")
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -5026,13 +5026,13 @@ WBC_Mprime_sensitivity_analysis_female <-
 
 ```{r, echo=FALSE, eval=FALSE}
 saveRDS(object = BC_treat_sensitivity_analysis, 
-        file = "/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds")
+        file = "/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR_trans.rds")
 
 saveRDS(object = BC_Mprime_sensitivity_analysis_male, 
-        file = "/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR.rds")
+        file = "/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR_trans.rds")
 
 saveRDS(object = BC_Mprime_sensitivity_analysis_female, 
-        file = "/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR.rds")
+        file = "/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR_trans.rds")
 
 saveRDS(object = WBC_treat_sensitivity_analysis, 
         file = "/output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds") 
@@ -5046,13 +5046,13 @@ saveRDS(object = WBC_Mprime_sensitivity_analysis_female,
 
 ```{r, echo=FALSE}
 BC_treat_sensitivity_analysis <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR_trans.rds")
 
 BC_Mprime_sensitivity_analysis_male <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR_trans.rds")
 
 BC_Mprime_sensitivity_analysis_female <-
-  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR.rds")
+  readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR_trans.rds")
 
 WBC_treat_sensitivity_analysis <-
   readRDS(file = "/Users/luketheduke2/ownCloud/coucals/final/coucal_demography/output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds")
