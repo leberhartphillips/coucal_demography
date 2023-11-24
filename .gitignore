@@ -13,11 +13,11 @@
 
 !coucal_demography.Rproj
 
-!/data/*
+!data/*
 
-!/images/*
+!images/*
 
-!/output/*
+!output/*
 
 !license.txt
 .Rproj.user
