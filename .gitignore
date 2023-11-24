@@ -4,11 +4,8 @@
 # But not these files...
 !README.html
 
-# ...even if they are in subdirectories
-!*/
-
-# if the files to be tracked are in subdirectories
 !Supplementary_Material_A.qmd
+
 !Supplementary_Material_A.html
 
 !coucal_demography.Rproj
