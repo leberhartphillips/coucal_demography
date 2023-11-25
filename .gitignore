@@ -15,7 +15,7 @@
 
 !output/mod_stats/*
 
-!output/sensitivity_analysis/*
+!output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR_trans.rds
 
 !output/bootstraps/tidy/*
 
