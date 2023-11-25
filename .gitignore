@@ -13,6 +13,8 @@
 
 !images/*
 
-!output/sensitivity_analysis*
+!output/mod_stats/**
+
+!output/sensitivity_analysis/**
 
 !license.txt
