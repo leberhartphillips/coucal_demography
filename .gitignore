@@ -13,6 +13,6 @@
 
 !images/*
 
-!output/sensitivity_analysis/*
+!output/sensitivity_analysis*
 
 !license.txt
