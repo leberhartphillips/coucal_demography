@@ -51,14 +51,14 @@ south-western Tanzania.
 
 [**`data/raw/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/data)
 
--   [`Coucal_chick_survival_2001-2019_20200129.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/Coucal_chick_survival_2001-2019_20200129.csv)
--   [`All_coucal_waypoints_2001_2019_20200202.xlsx`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/All_coucal_waypoints_2001_2019_20200202.xlsx)
--   [`Coucal_Nr_mates_2001_2019_20200123.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/Coucal_Nr_mates_2001_2019_20200123.csv)
--   [`Egg_surv_data_2001_2019_20210524.xls`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/Egg_surv_data_2001_2019_20210524.xls%60)
--   [`coucals_first_flights_data_per_individual2020.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/coucals_first_flights_data_per_individual2020.csv)
--   [`juvies_2013_2020_waypoints.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/juvies_2013_2020_waypoints.csv)
--   [`Coucal_adults_survival_2001-2019_20200129.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/Coucal_adults_survival_2001-2019_20200129.csv)
--   [`age_classes_2001-2020_2.xlsx`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/age_classes_2001-2020_2.xlsx)
+-   [`Coucal_chick_survival_2001-2019_20200129.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Coucal_chick_survival_2001-2019_20200129.csv)
+-   [`All_coucal_waypoints_2001_2019_20200202.xlsx`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/All_coucal_waypoints_2001_2019_20200202.xlsx)
+-   [`Coucal_Nr_mates_2001_2019_20200123.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Coucal_Nr_mates_2001_2019_20200123.csv)
+-   [`Egg_surv_data_2001_2019_20210524.xls`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Egg_surv_data_2001_2019_20210524.xls%60)
+-   [`coucals_first_flights_data_per_individual2020.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/coucals_first_flights_data_per_individual2020.csv)
+-   [`juvies_2013_2020_waypoints.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/juvies_2013_2020_waypoints.csv)
+-   [`Coucal_adults_survival_2001-2019_20200129.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Coucal_adults_survival_2001-2019_20200129.csv)
+-   [`age_classes_2001-2020_2.xlsx`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/age_classes_2001-2020_2.xlsx)
 
 [**`outout/bootstraps/raw/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/)
 folder containing all the raw runs of the stochastic simulation (10000
