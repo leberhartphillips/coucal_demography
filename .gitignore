@@ -13,8 +13,10 @@
 
 !images/*
 
-!output/mod_stats/**
+!output/mod_stats/*
 
-!output/sensitivity_analysis/**
+!output/sensitivity_analysis/*
+
+!output/bootstraps/tidy/*
 
 !license.txt
