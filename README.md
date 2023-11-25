@@ -54,7 +54,7 @@ south-western Tanzania.
 -   [`Coucal_chick_survival_2001-2019_20200129.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Coucal_chick_survival_2001-2019_20200129.csv)
 -   [`All_coucal_waypoints_2001_2019_20200202.xlsx`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/All_coucal_waypoints_2001_2019_20200202.xlsx)
 -   [`Coucal_Nr_mates_2001_2019_20200123.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Coucal_Nr_mates_2001_2019_20200123.csv)
--   [`Egg_surv_data_2001_2019_20210524.xls`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Egg_surv_data_2001_2019_20210524.xls%60)
+-   [`Egg_surv_data_2001_2019_20210524.xls`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Egg_surv_data_2001_2019_20210524.xls)
 -   [`coucals_first_flights_data_per_individual2020.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/coucals_first_flights_data_per_individual2020.csv)
 -   [`juvies_2013_2020_waypoints.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/juvies_2013_2020_waypoints.csv)
 -   [`Coucal_adults_survival_2001-2019_20200129.csv`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/Coucal_adults_survival_2001-2019_20200129.csv)
@@ -83,21 +83,21 @@ folder containing the tidy summaries of the stochastic simulation
 -   [`WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/WBC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds)
 -   [`parameter_distributions.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/parameter_distributions.rds)
 
-[**`output/sensitivity_analysis/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis)
+[**`output/sensitivity_analysis/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis)
 folder containing the output of the sensitivity analysis
 
--   [`BC_treat_sensitivity_analysis_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds)
+-   [`BC_treat_sensitivity_analysis_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds)
     sensitivities of treatment life table for black coucal
--   [`BC_Mprime_sensitivity_analysis_male_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR.rds)
+-   [`BC_Mprime_sensitivity_analysis_male_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR.rds)
     sensitivities of male-based M-prime life table for black coucal
--   [`BC_Mprime_sensitivity_analysis_female_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR.rds)
+-   [`BC_Mprime_sensitivity_analysis_female_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR.rds)
     sensitivities of female-based M-prime life table for black coucal
--   [`WBC_treat_sensitivity_analysis_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds)
+-   [`WBC_treat_sensitivity_analysis_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds)
     sensitivities of treatment life table for white-browed coucal
--   [`WBC_Mprime_sensitivity_analysis_male_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_ASR.rds)
+-   [`WBC_Mprime_sensitivity_analysis_male_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_male_ASR.rds)
     sensitivities of male-based M-prime life table for white-browed
     coucal
--   [`WBC_Mprime_sensitivity_analysis_female_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds)
+-   [`WBC_Mprime_sensitivity_analysis_female_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/WBC_Mprime_sensitivity_analysis_female_ASR.rds)
     sensitivities of female-based M-prime life table for white-browed
     coucal
 
