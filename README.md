@@ -36,7 +36,7 @@ In this repository you can find all the raw data and code needed to
 reproduce our investigation of sex-specific early-life demographic
 pathways of black coucals (*Centropus grillii*) and white-browed coucals
 (*Centropus superciliosus*) monitored over a 15-year period in
-south-western Tanzania.
+south-western Tanzania. Our OSF repository (https://osf.io/bw679/; DOI: https://doi.org/10.17605/OSF.IO/BW679) mirrors this GitHub repository.
 
 ![](images/ASR_sex_diff_LTRE.jpg)
 
@@ -45,7 +45,7 @@ south-western Tanzania.
 - [`Supplementary_Material_A.qmd`](https://github.com/leberhartphillips/coucal_demography/blob/main/Supplementary_Material_A.qmd)
     Quarto source code for vignette of analysis
 - [`Supplementary_Material_A.html`](https://github.com/leberhartphillips/coucal_demography/blob/main/Supplementary_Material_A.html)
-    HTML vignette of analysis for reproducibility of results
+    HTML vignette of analysis for reproducibility of results. Click [`here`](https://rawcdn.githack.com/leberhartphillips/coucal_demography/965bda342f1531fcae26f8c76e321ee798c1a4ba/Supplementary_Material_A.html) for the rendered document to view in your browser.
 - [`coucal_demography.Rproj`](https://github.com/leberhartphillips/coucal_demography/blob/main/coucal_demography.Rproj)
     RStudio project to run and reproduce results
 
