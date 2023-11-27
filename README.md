@@ -61,17 +61,15 @@ south-western Tanzania.
 -   [`age_classes_2001-2020_2.xlsx`](https://github.com/leberhartphillips/coucal_demography/tree/main/data/raw/age_classes_2001-2020_2.xlsx)
 
 [**`outout/bootstraps/raw/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/)
-folder containing all the raw runs of the stochastic simulation (10000
-rds files for each species) and the adult CJS bootstrap (10000 rds
-files)
+folder containing the raw runs of the stochastic simulation. The simulation produces 10000 output files for each species. For storage issues in this repository, we provide an example of the structure for one iteration's output .rds file for each species and analysis (i.e., the stochastic ASR simulation and the adult CJS bootstrap. 10000
 
--   10000 rds files for black coucal hazard and ASR model (e.g.,
-    [`BC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/BC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds))
--   10000 rds files for white-browed coucal hazard and ASR model (e.g.,
-    [`WBC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/WBC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds))
--   10000 rds files for white-browed coucal CJS adult survival bootstrap
+-   rds file for black coucal hazard and ASR model (e.g.,
+    [`BC_boot_w_trans_WBC_ad_surv_stoc_328.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/BC_boot_w_trans_WBC_ad_surv_stoc_328.Rds))
+-   rds file for white-browed coucal hazard and ASR model (e.g.,
+    [`WBC_boot_w_trans_WBC_ad_surv_stoc_328.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/WBC_boot_w_trans_WBC_ad_surv_stoc_328.Rds))
+-   rds file for white-browed coucal CJS adult survival bootstrap
     (e.g.,
-    [`WBC_boot_CJS_5802.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/WBC_boot_w_trans_WBC_ad_surv_stoc_5802.Rds))
+    [`WBC_boot_CJS_328.Rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/raw/WBC_boot_w_trans_WBC_ad_surv_stoc_328.Rds))
 
 [**`output/bootstraps/tidy/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy)
 folder containing the tidy summaries of the stochastic simulation
@@ -80,17 +78,17 @@ folder containing the tidy summaries of the stochastic simulation
 -   [`BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/BC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds)
 -   [`WBC_haz_sur_ASR_boot_tidy_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/WBC_haz_sur_ASR_boot_tidy_stoc.rds)
 -   [`WBC_adult_survival_CJS_bootstrap_tidy.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/WBC_adult_survival_CJS_bootstrap_tidy.rds)
--   [`WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/WBC_hazard_ASR_bootstrap_result_w_trans_WBC_ad_surv_stoc.rds)
+-   [`WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/WBC_hazard_ASR_bootstrap_result_w_WBC_ad_surv_stoc.rds)
 -   [`parameter_distributions.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/bootstraps/tidy/parameter_distributions.rds)
 
 [**`output/sensitivity_analysis/`**](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis)
 folder containing the output of the sensitivity analysis
 
--   [`BC_treat_sensitivity_analysis_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR.rds)
+-   [`BC_treat_sensitivity_analysis_ASR_trans.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_treat_sensitivity_analysis_ASR_trans.rds)
     sensitivities of treatment life table for black coucal
--   [`BC_Mprime_sensitivity_analysis_male_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR.rds)
+-   [`BC_Mprime_sensitivity_analysis_male_ASR_trans.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_male_ASR_trans.rds)
     sensitivities of male-based M-prime life table for black coucal
--   [`BC_Mprime_sensitivity_analysis_female_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR.rds)
+-   [`BC_Mprime_sensitivity_analysis_female_ASR_trans.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/BC_Mprime_sensitivity_analysis_female_ASR_trans.rds)
     sensitivities of female-based M-prime life table for black coucal
 -   [`WBC_treat_sensitivity_analysis_ASR.rds`](https://github.com/leberhartphillips/coucal_demography/tree/main/output/sensitivity_analysis/WBC_treat_sensitivity_analysis_ASR.rds)
     sensitivities of treatment life table for white-browed coucal
