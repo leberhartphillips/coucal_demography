@@ -24,7 +24,7 @@
 
 ✉ For correspondence regarding the code in this repository, please
 contact: Luke
-(<a href= "mailto:luke.eberhart[at]bi.mpg.de">luke.eberhart[at]bi.mpg.de</a>)
+(<a href= "mailto:luke.eberhart@bi.mpg.de">luke.eberhart[at]bi.mpg.de</a>)
 
 ✉ For correspondence regarding the data and study system, please
 contact: Wolfgang
